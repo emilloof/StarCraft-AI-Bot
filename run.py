@@ -16,7 +16,7 @@ def main():
     coordinator.connect(args.GamePort) # Connect to the game
     coordinator.join_game()
 
-    while not coordinator.AllGamesEnded():  # The coordinator returns false even if the game is not finished
+    while not coordinator.all_games_ended():  # The coordinator returns false even if the game is not finished
         coordinator.update()
 
 
