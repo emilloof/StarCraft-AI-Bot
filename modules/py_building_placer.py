@@ -128,3 +128,4 @@ class PyBuildingPlacer:
             return None
 
         return Point2D(pos)
+
