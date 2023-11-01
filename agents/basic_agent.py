@@ -8,7 +8,7 @@ from modules import debugging as debug
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
 from modules.extra import unit_types_by_condition
-
+import bottlenecks as bottle
 if DEBUG_VISUAL:
     from visualdebugger.heat_map_debugger import HeatMapDebugger
 
@@ -59,6 +59,9 @@ class BasicAgent(pycc.IDABot):
             self.debugger.on_step(lambda: debug.debug_map(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
+        map = bottle.get_list_of_bottlenecks(self)
+        for key, value in map.items():
+            print(key, value)
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
