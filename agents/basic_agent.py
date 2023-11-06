@@ -1,4 +1,6 @@
 from typing import Union
+# jag la in
+from library import Point2DI
 import library as pycc
 from modules.build_order import BuildOrder
 from modules.task_manager import TaskManager
@@ -55,11 +57,8 @@ class BasicAgent(pycc.IDABot):
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
         map = bottle.get_list_of_bottlenecks(self)
-        """for key, value in map.items():
-            if value == 1:
-                 for square in self.debugger.squares:
-                     print(self.debugger.get_color_of_tile(square[1]))
-            #print(key, value)"""
+        bottle.get_offset_coords(Point2DI(2, 2), 2)
+
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()

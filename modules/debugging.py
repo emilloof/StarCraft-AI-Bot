@@ -17,7 +17,7 @@ def debug_map(agent: BasicAgent, bottle_map: dict) -> None:
         for x in range(agent.map_tools.width):
             if int(agent.map_tools.is_walkable(x, y)):
                 tile = Point2DI(x, y)
-                if bottle_map[tile] == 1:
+                if bottle_map[tile] == 7:
                     heat_map_row.append(2)
                 else:
                     heat_map_row.append(1)
