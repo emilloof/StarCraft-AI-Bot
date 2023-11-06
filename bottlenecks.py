@@ -31,7 +31,8 @@ def get_depth_of_tile(agent: BasicAgent, depth_map: dict, tile: Point2DI, last_f
                 if agent.map_tools.is_valid_tile(offset_coord):
                     offset_2d = Point2D(offset_coord.x, offset_coord.y)
                     tile_2d = Point2D(tile.x, tile.y) + offset_2d
-                    new_tile = Point2DI(tile_2d.x, tile_2d.y)
+                    
+                    new_tile = Point2DI(tile_2d)
                     if not agent.map_tools.is_walkable(new_tile):
                         depth_map[tile] = current_depth
                         break

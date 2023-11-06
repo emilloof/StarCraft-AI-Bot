@@ -53,16 +53,20 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
+
+        map = bottle.get_list_of_bottlenecks(self)
+        """for key, value in map.items():
+            if value == 1:
+                 for square in self.debugger.squares:
+                     print(self.debugger.get_color_of_tile(square[1]))
+            #print(key, value)"""
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self))
+            self.debugger.on_step(lambda: debug.debug_map(self, map))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
         
-        map = bottle.get_list_of_bottlenecks(self)
-        for key, value in map.items():
-            print(key, value)
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
@@ -104,7 +108,8 @@ class BasicAgent(pycc.IDABot):
         # sets the colormap for the debugger {(interval): (r, g, b)}
         color_map = {
             (0, 0): (0, 0, 0,),
-            (1, 1): (255, 255, 255)
+            (1, 1): (255, 255, 255),
+            (2, 2): (0, 255, 0)
         }
         self.debugger.set_color_map(color_map)
 

@@ -1,16 +1,30 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-
+from library import Point2DI, Point2D
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
 from library import PLAYER_SELF, PLAYER_NEUTRAL
 
 
-def debug_map(agent: BasicAgent) -> None:
+def debug_map(agent: BasicAgent, bottle_map: dict) -> None:
     """Displays the map in a separate window."""
-    heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
-                for y in range(agent.map_tools.height)]
+    """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
+                for y in range(agent.map_tools.height)]"""
+    heat_map = []
+    for y in range(agent.map_tools.height):
+        heat_map_row = []
+        for x in range(agent.map_tools.width):
+            if int(agent.map_tools.is_walkable(x, y)):
+                tile = Point2DI(x, y)
+                if bottle_map[tile] == 1:
+                    heat_map_row.append(2)
+                else:
+                    heat_map_row.append(1)
+            else:
+                heat_map_row.append(0)
+        heat_map.append(heat_map_row)
+            
     agent.debugger.set_display_values(heat_map)
 
 
