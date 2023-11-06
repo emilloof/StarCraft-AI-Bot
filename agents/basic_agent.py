@@ -59,6 +59,7 @@ class BasicAgent(pycc.IDABot):
             self.debugger.on_step(lambda: debug.debug_map(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
+        
         map = bottle.get_list_of_bottlenecks(self)
         for key, value in map.items():
             print(key, value)
