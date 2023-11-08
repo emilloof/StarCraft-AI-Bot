@@ -12,6 +12,7 @@ def debug_map(agent: BasicAgent) -> None:
     heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
                 for y in range(agent.map_tools.height)]
     agent.debugger.set_display_values(heat_map)
+    print("hejsan merge test")
 
 
 def debug_text(agent: BasicAgent) -> None:
