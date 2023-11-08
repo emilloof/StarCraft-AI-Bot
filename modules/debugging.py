@@ -33,6 +33,7 @@ def debug_map(agent: BasicAgent, bottle_map: dict) -> None:
         heat_map.append(heat_map_row)
             
     agent.debugger.set_display_values(heat_map)
+    print("hejsan merge test")
 
 
 def debug_text(agent: BasicAgent) -> None:
