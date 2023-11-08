@@ -57,7 +57,7 @@ class BasicAgent(pycc.IDABot):
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
         map = bottle.get_list_of_bottlenecks(self)
-        bottle.get_offset_coords(Point2DI(2, 2), 2)
+        #bottle.get_offset_coords(Point2DI(2, 2), 2)
 
         if DEBUG_VISUAL:
             self.set_up_debugging()

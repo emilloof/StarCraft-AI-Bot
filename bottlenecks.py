@@ -28,35 +28,32 @@ def get_depth_of_tile(agent: BasicAgent, depth_map: dict, tile: Point2DI, last_f
     """ Finds the distance between a walkable tile and its closest wall tile """
     current_depth = 1
     while depth_map[tile] == 0:
-        for offset_x in range(-current_depth, current_depth + 1):
-            for offset_y in range(-current_depth, current_depth + 1):
-                if offset_y == -current_depth or offset_y == current_depth or offset_x == -current_depth or offset_x == current_depth:
-                    offset_coord = Point2DI(offset_x, offset_y)
-                    if agent.map_tools.is_valid_tile(offset_coord):
-                        offset_2d = Point2D(offset_coord.x, offset_coord.y)
-                        tile_2d = Point2D(tile.x, tile.y) + offset_2d
-                        
-                        new_tile = Point2DI(tile_2d)
-                        if not agent.map_tools.is_walkable(new_tile):
-                            depth_map[tile] = current_depth
-                            break
+        offsets = get_offset_coords(tile, current_depth)
+        for offset in offsets:
+
+            offset_2d = Point2D(offset[0], offset[1])
+            tile_2d = Point2D(tile.x, tile.y) + offset_2d
+            new_tile = Point2DI(tile_2d)
+            if agent.map_tools.is_valid_tile(new_tile):
+                if not agent.map_tools.is_walkable(new_tile):
+                    depth_map[tile] = current_depth
+                    break
         current_depth = current_depth + 1
     
 def get_offset_coords(tile: Point2DI, depth: int) -> list:
     
     offset_coordinates = []
 
-    for x in range(tile.x - depth, tile.x + depth + 1):
-        for y in range(tile.y - depth, tile.y + depth + 1):
+    for x in range(-depth, depth + 1):
+        for y in range(-depth, depth + 1):
             # Calculate octile distance using max(dx, dy) and min(dx, dy)
-            dx = abs(x - tile.x)
-            dy = abs(y - tile.y)
-            octile_distance = max(dx, dy) + 0.4142135623730951 * min(dx, dy)  # Approximation of sqrt(2)
-
-            if octile_distance == depth:
+            if x == depth or x == -depth:
                 offset_coordinates.append((x, y))
+            else:
+                if y == depth or y == -depth:
+                    offset_coordinates.append((x, y))
 
-    print(offset_coordinates)
+    return offset_coordinates
 
         
 
