@@ -1,4 +1,6 @@
 from typing import Union
+# jag la in
+from library import Point2DI
 import library as pycc
 from modules.build_order import BuildOrder
 from modules.task_manager import TaskManager
@@ -53,15 +55,17 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
+
+        map = bottle.get_list_of_bottlenecks(self)
+        #bottle.get_offset_coords(Point2DI(2, 2), 2)
+
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self))
+            self.debugger.on_step(lambda: debug.debug_map(self, map))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
-        map = bottle.get_list_of_bottlenecks(self)
-        for key, value in map.items():
-            print(key, value)
+        
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
@@ -103,7 +107,8 @@ class BasicAgent(pycc.IDABot):
         # sets the colormap for the debugger {(interval): (r, g, b)}
         color_map = {
             (0, 0): (0, 0, 0,),
-            (1, 1): (255, 255, 255)
+            (1, 1): (255, 255, 255),
+            (2, 2): (0, 255, 0)
         }
         self.debugger.set_color_map(color_map)
 
