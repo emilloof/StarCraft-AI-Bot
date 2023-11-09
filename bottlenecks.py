@@ -15,6 +15,7 @@ def get_list_of_bottlenecks(agent: BasicAgent) -> dict:
     """ Returns a list of bottlenecks in the game map """
     # Create map of each tile and associated depth
     depth_map = {}
+    # Insert every walkable tile with depth 0 in map
     init_map(agent, depth_map)
     # The last found depth of a tile
     last_found_depth = 1
@@ -52,15 +53,16 @@ def get_offset_coords(tile: Point2DI, depth: int) -> list:
     return offset_coordinates
 
 
-def set_gate_tiles(depth_map: dict) -> None:
+def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> None:
     curr_water_level = 20   # 20 = maxdepth (Magic number, fix!!)
     neigbour_map = {}
+    init_map(agent, neigbour_map)
     while curr_water_level >= 0:
         pass
 
 
 def init_map(agent: BasicAgent, map: dict) -> None:
-
+    """ Insert every walkable tile in game to map with value 0 """
     for x in range(agent.map_tools.width):
         for y in range(agent.map_tools.height):
             tile = Point2DI(x, y)
