@@ -11,6 +11,12 @@ if TYPE_CHECKING:
 
 from library import PLAYER_SELF, PLAYER_NEUTRAL
 
+def get_bottlenecks(agent: BasicAgent) -> list:
+
+    map = get_list_of_bottlenecks(agent)
+    gates = set_gate_tiles(agent, map)
+    return gates
+
 def get_list_of_bottlenecks(agent: BasicAgent) -> dict:
     """ Returns a list of bottlenecks in the game map """
     # Create map of each tile and associated depth
@@ -53,12 +59,44 @@ def get_offset_coords(tile: Point2DI, depth: int) -> list:
     return offset_coordinates
 
 
-def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> None:
-    curr_water_level = 20   # 20 = maxdepth (Magic number, fix!!)
-    neigbour_map = {}
-    init_map(agent, neigbour_map)
+def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> list:
+    
+    curr_water_level = 15   # 20 = maxdepth (Magic number, fix!!)
+    labelled_tiles = {}     # All labelled tiles
+    gate_tiles = []         # All gate tiles
+    
     while curr_water_level >= 0:
-        pass
+        for tile in depth_map:
+            if depth_map[tile] == curr_water_level:
+                neighbours = get_labelled_neighbours(agent, labelled_tiles, tile)
+                if len(neighbours) > 1:
+                    values = []
+                    for value in neighbours.values():
+                        values.append(value)
+                    x = all(values)
+                    if not x:
+                        gate_tiles.append(tile)
+                    
+                    labelled_tiles[tile] = list(neighbours.values())[0]
+
+                elif len(neighbours) == 1:
+                    labelled_tiles[tile] = list(neighbours.values())[0]
+                else:
+                    labelled_tiles[tile] = depth_map[tile]
+        curr_water_level = curr_water_level - 1
+
+    return gate_tiles
+    
+
+def get_labelled_neighbours(agent: BasicAgent, labelled_tiles: dict, tile: Point2DI) -> dict:
+    
+    labelled_neighbours = {}
+
+    for labelled_tile in labelled_tiles:
+        if agent.map_tools.is_connected(tile, labelled_tile):
+            labelled_neighbours[labelled_tile] = labelled_tiles[labelled_tile]
+        
+    return labelled_neighbours
 
 
 def init_map(agent: BasicAgent, map: dict) -> None:

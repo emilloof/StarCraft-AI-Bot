@@ -7,15 +7,16 @@ if TYPE_CHECKING:
 from library import PLAYER_SELF, PLAYER_NEUTRAL
 
 # Skapad av eriei013 för testning
-def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
+def print_depth(bottle_map: list, heat_map_row: list, x: int, y: int) -> bool:
     tile = Point2DI(x, y)
-    if bottle_map[tile] == 1:
+    #if bottle_map[tile] == 1:
+    for pos in bottle_map:
         heat_map_row.append(2)
         return True
     return False
 
 
-def debug_map(agent: BasicAgent, bottle_map: dict) -> None:
+def debug_map(agent: BasicAgent, bottle_map: list) -> None:
     """Displays the map in a separate window."""
     """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
                 for y in range(agent.map_tools.height)]"""
@@ -25,7 +26,11 @@ def debug_map(agent: BasicAgent, bottle_map: dict) -> None:
         for x in range(agent.map_tools.width):
             if int(agent.map_tools.is_walkable(x, y)):
                 b = False
-                b = print_depth(bottle_map, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #b = print_depth(bottle_map, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                """pos = Point2DI(x, y)
+                if pos in bottle_map:
+                    heat_map_row.append(2)
+                    b = True"""
                 if not b:
                     heat_map_row.append(1)
             else:

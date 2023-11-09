@@ -56,13 +56,15 @@ class BasicAgent(pycc.IDABot):
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
-        map = bottle.get_list_of_bottlenecks(self)
+        list = bottle.get_bottlenecks(self)
+        for elm in list:
+            print(elm)
         #bottle.get_offset_coords(Point2DI(2, 2), 2)
 
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self, map))
+            self.debugger.on_step(lambda: debug.debug_map(self, list))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
         
