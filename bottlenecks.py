@@ -15,17 +15,12 @@ def get_list_of_bottlenecks(agent: BasicAgent) -> dict:
     """ Returns a list of bottlenecks in the game map """
     # Create map of each tile and associated depth
     depth_map = {}
+    init_map(agent, depth_map)
     # The last found depth of a tile
     last_found_depth = 1
-    for x in range(agent.map_tools.width):
-        for y in range(agent.map_tools.height):
-            curr_tile = Point2DI(x, y)
-            if agent.map_tools.is_walkable(curr_tile):
-                depth_map[curr_tile] = 0
-                get_depth_of_tile(agent, depth_map, curr_tile, last_found_depth)
-                last_found_depth = depth_map[curr_tile]
-            else:
-                depth_map[curr_tile] = 0
+    for tile in depth_map:
+        get_depth_of_tile(agent, depth_map, tile, last_found_depth)
+        last_found_depth = depth_map[tile]
     return depth_map
 
 def get_depth_of_tile(agent: BasicAgent, depth_map: dict, tile: Point2DI, last_found_depth: int) -> None:
@@ -44,9 +39,8 @@ def get_depth_of_tile(agent: BasicAgent, depth_map: dict, tile: Point2DI, last_f
         current_depth = current_depth + 1
     
 def get_offset_coords(tile: Point2DI, depth: int) -> list:
-    
+    """ Returns a list of all offset coordinates to a specific depth and tile """
     offset_coordinates = []
-
     for x in range(-depth, depth + 1):
         for y in range(-depth, depth + 1):
             if x == depth or x == -depth:
@@ -57,5 +51,19 @@ def get_offset_coords(tile: Point2DI, depth: int) -> list:
 
     return offset_coordinates
 
-        
 
+def set_gate_tiles(depth_map: dict) -> None:
+    curr_water_level = 20   # 20 = maxdepth (Magic number, fix!!)
+    neigbour_map = {}
+    while curr_water_level >= 0:
+        pass
+
+
+def init_map(agent: BasicAgent, map: dict) -> None:
+
+    for x in range(agent.map_tools.width):
+        for y in range(agent.map_tools.height):
+            tile = Point2DI(x, y)
+            if agent.map_tools.is_walkable(tile):
+                map[tile] = 0
+    return map
