@@ -13,28 +13,40 @@ class AttackScripts:
         Point2D.distance = lambda self, other: sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
 
         pos = py_unit.position
-        attack_range = int(py_unit.unit_type.attack_range)
+        myX = pos.x
+        myY = pos.y
+        attack_range = py_unit.unit_type.attack_range
         unit_list = agent.unit_collection.get_group(PLAYER_ENEMY, lambda u: u.unit_type.is_combat_unit)
         nearest_distance = 99999
         attack_unit = None
 
-        for dx in range(-attack_range, attack_range + 1):
-            for dy in range(-attack_range, attack_range + 1):
-                # Calculate the target tile position within range
-                target_tile_x = pos.x + dx
-                target_tile_y = pos.y + dy
+        for pyunit in unit_list:
+            if (myX - attack_range) < pyunit.position.x < (myX + attack_range) and (
+                        myY - attack_range) < pyunit.position.y < (myY + attack_range):
 
-                for unit in unit_list:
-                    if unit.position == (target_tile_x, target_tile_y):
-                        if pos.distance(unit.position) < nearest_distance:
-                            attack_unit = unit
-                            nearest_distance = pos.distance(unit.position)
+                if pos.distance(pyunit.position) < nearest_distance:
+                    attack_unit = pyunit.unit
+                    nearest_distance = pos.distance(pyunit.position)
         if attack_unit:
-            py_unit.attack_unit(attack_unit)
+            py_unit.unit.attack_unit(attack_unit)
+
     @staticmethod
-    def attack_lowest(py_unit: PyUnit):
+    def attack_lowest(py_unit: PyUnit, agent):
         """Attack the enemy with the lowest health"""
-        pass
+        pos = py_unit.position
+        myX = pos.x
+        myY = pos.y
+        attack_range = py_unit.unit_type.attack_range
+        unit_list = agent.unit_collection.get_group(PLAYER_ENEMY, lambda u: u.unit_type.is_combat_unit)
+        lowest_attack = 0
+        attack_unit = None
+
+        for unit in unit_list:
+            if (myX - attack_range) < unit.position.x < (myX + attack_range) and (myY -attack_range) < unit.position.y < (myY + attack_range):
+                if unit.hit_points > lowest_attack: #WROOOOOOOOOOOOOOOOOOOOOOONG
+                    attack_unit = unit.unit
+        if attack_unit:
+            py_unit.unit.attack_unit(attack_unit)
 
     @staticmethod
     def kiting(py_unit: PyUnit):
