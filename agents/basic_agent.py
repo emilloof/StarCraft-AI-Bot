@@ -8,6 +8,7 @@ from modules import debugging as debug
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
 from modules.extra import unit_types_by_condition
+from strategy import Strategy
 
 if DEBUG_VISUAL:
     from visualdebugger.heat_map_debugger import HeatMapDebugger
@@ -39,6 +40,8 @@ class BasicAgent(pycc.IDABot):
         }
         self.WORKER_TYPES = set()
         self.COMBAT_TYPES = set()
+
+        self.strategy = Strategy
 
         if DEBUG_VISUAL:
             self.debugger = HeatMapDebugger()
@@ -88,6 +91,8 @@ class BasicAgent(pycc.IDABot):
             for key, val in self.timer:
                 self.logger.add(key, val)
             self.timer.reset()
+        self.strategy.print_unit_collection(self)
+        #exit()
 
         if DEBUG_UNIT:
             debug.debug_units(self)
