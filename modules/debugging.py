@@ -11,7 +11,7 @@ def debug_map(agent: BasicAgent) -> None:
     """Displays the map in a separate window."""
     heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
                 for y in range(agent.map_tools.height)]
-    # agent.debugger.set_display_values(heat_map)
+    agent.debugger.set_display_values(heat_map)
 
 
 def debug_text(agent: BasicAgent) -> None:

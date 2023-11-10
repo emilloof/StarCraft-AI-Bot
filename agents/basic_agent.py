@@ -63,6 +63,8 @@ class BasicAgent(pycc.IDABot):
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
         pycc.IDABot.on_step(self)
+        self.debugger.on_step()
+        
 
         if self.current_frame % FRAME_SKIP == 1:
             if DEBUG_LOGS:
