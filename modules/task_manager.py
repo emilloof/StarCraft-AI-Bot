@@ -208,7 +208,7 @@ class TaskManager:
     def scout(self) -> None:
         """
         Finds the two closest bases to the enemy's starting location and creates a task to scout these bases and the
-        staring base of the opponent.
+        starting base of the opponent.
         """
         # Scout, compiles a list over bases to scout
         enemy_base_pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
