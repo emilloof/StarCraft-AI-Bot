@@ -16,7 +16,7 @@ def print_depth(bottle_map: list, heat_map_row: list, x: int, y: int) -> bool:
     return False
 
 
-def debug_map(agent: BasicAgent, bottle_map: list) -> None:
+def debug_map(agent: BasicAgent, bottle_tiles: list) -> None:
     """Displays the map in a separate window."""
     """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
                 for y in range(agent.map_tools.height)]"""
@@ -27,10 +27,10 @@ def debug_map(agent: BasicAgent, bottle_map: list) -> None:
             if int(agent.map_tools.is_walkable(x, y)):
                 b = False
                 #b = print_depth(bottle_map, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
-                """pos = Point2DI(x, y)
-                if pos in bottle_map:
+                tile = Point2DI(x, y)
+                if tile in bottle_tiles:
                     heat_map_row.append(2)
-                    b = True"""
+                    b = True
                 if not b:
                     heat_map_row.append(1)
             else:
@@ -38,7 +38,6 @@ def debug_map(agent: BasicAgent, bottle_map: list) -> None:
         heat_map.append(heat_map_row)
             
     agent.debugger.set_display_values(heat_map)
-    print("hejsan merge test")
 
 
 def debug_text(agent: BasicAgent) -> None:

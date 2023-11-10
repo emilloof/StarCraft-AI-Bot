@@ -58,7 +58,7 @@ class BasicAgent(pycc.IDABot):
 
         list = bottle.get_bottlenecks(self)
         for elm in list:
-            print(elm)
+           print(elm)
         #bottle.get_offset_coords(Point2DI(2, 2), 2)
 
         if DEBUG_VISUAL:

@@ -18,17 +18,23 @@ def get_bottlenecks(agent: BasicAgent) -> list:
     return gates
 
 def get_list_of_bottlenecks(agent: BasicAgent) -> dict:
-    """ Returns a list of bottlenecks in the game map """
+    """ Returns a dict where each tile is associated to a depth """
     # Create map of each tile and associated depth
     depth_map = {}
     # Insert every walkable tile with depth 0 in map
     init_map(agent, depth_map)
     # The last found depth of a tile
     last_found_depth = 1
+    found_depths = []
     for tile in depth_map:
+        divided_depth_map = {}
         get_depth_of_tile(agent, depth_map, tile, last_found_depth)
         last_found_depth = depth_map[tile]
-    return depth_map
+        if not depth_map[tile] in divided_depth_map:
+            divided_depth_map[depth_map[tile]] = []
+        divided_depth_map[depth_map[tile]].append(tile)
+
+    return divided_depth_map
 
 def get_depth_of_tile(agent: BasicAgent, depth_map: dict, tile: Point2DI, last_found_depth: int) -> None:
     """ Finds the distance between a walkable tile and its closest wall tile """
@@ -59,30 +65,29 @@ def get_offset_coords(tile: Point2DI, depth: int) -> list:
     return offset_coordinates
 
 
-def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> list:
+def set_gate_tiles(agent: BasicAgent, divided_depth_map: dict) -> list:
     
     curr_water_level = 15   # 20 = maxdepth (Magic number, fix!!)
     labelled_tiles = {}     # All labelled tiles
     gate_tiles = []         # All gate tiles
     
     while curr_water_level >= 0:
-        for tile in depth_map:
-            if depth_map[tile] == curr_water_level:
-                neighbours = get_labelled_neighbours(agent, labelled_tiles, tile)
-                if len(neighbours) > 1:
-                    values = []
-                    for value in neighbours.values():
-                        values.append(value)
-                    x = all(values)
-                    if not x:
-                        gate_tiles.append(tile)
-                    
-                    labelled_tiles[tile] = list(neighbours.values())[0]
+        for tile in divided_depth_map.get(curr_water_level, []):
+            neighbours = get_labelled_neighbours(agent, labelled_tiles, tile)
+            if len(neighbours) > 1:
+                values = []
+                for value in neighbours.values():
+                    values.append(value)
+                x = all(values)
+                if not x:
+                    gate_tiles.append(tile)
+                
+                labelled_tiles[tile] = list(neighbours.values())[0]
 
-                elif len(neighbours) == 1:
-                    labelled_tiles[tile] = list(neighbours.values())[0]
-                else:
-                    labelled_tiles[tile] = depth_map[tile]
+            elif len(neighbours) == 1:
+                labelled_tiles[tile] = list(neighbours.values())[0]
+            else:
+                labelled_tiles[tile] = 0
         curr_water_level = curr_water_level - 1
 
     return gate_tiles
@@ -91,10 +96,16 @@ def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> list:
 def get_labelled_neighbours(agent: BasicAgent, labelled_tiles: dict, tile: Point2DI) -> dict:
     
     labelled_neighbours = {}
+    offsets = get_offset_coords(tile, 1)
 
-    for labelled_tile in labelled_tiles:
-        if agent.map_tools.is_connected(tile, labelled_tile):
-            labelled_neighbours[labelled_tile] = labelled_tiles[labelled_tile]
+    for offset in offsets:
+        offset_2d = Point2D(offset[0], offset[1])
+        neighbour_2d = Point2D(tile.x, tile.y) + offset_2d
+        neighbour_2di = Point2DI(neighbour_2d)
+        if agent.map_tools.is_valid_tile(neighbour_2di):
+            if agent.map_tools.is_walkable(tile):
+                if neighbour_2di in labelled_neighbours:
+                    labelled_neighbours[neighbour_2di] = labelled_tiles[neighbour_2di]
         
     return labelled_neighbours
 
