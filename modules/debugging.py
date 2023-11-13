@@ -6,11 +6,26 @@ if TYPE_CHECKING:
 
 from library import PLAYER_SELF, PLAYER_NEUTRAL
 
-# Skapad av eriei013 för testning
-def print_depth(bottle_map: list, heat_map_row: list, x: int, y: int) -> bool:
+# Skapad av eriei013 för testning av depth map
+def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
+    var = False
     tile = Point2DI(x, y)
-    #if bottle_map[tile] == 1:
-    for pos in bottle_map:
+    if tile in bottle_map.get(1, []):
+        heat_map_row.append(2)
+        var = True
+    elif tile in bottle_map.get(2, []):
+        heat_map_row.append(3)
+        var = True
+    elif tile in bottle_map.get(3, []):
+        heat_map_row.append(4)
+        var = True
+    return var
+
+# Skapad av eriei013 för testning av gate tiles
+def print_gate_tiles(bottle_tiles: list, heat_map_row: list, x: int, y: int) -> bool:
+    tile = Point2DI(x, y)
+    #print(bottle_tiles)
+    if tile in bottle_tiles:
         heat_map_row.append(2)
         return True
     return False
@@ -21,16 +36,15 @@ def debug_map(agent: BasicAgent, bottle_tiles: list) -> None:
     """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
                 for y in range(agent.map_tools.height)]"""
     heat_map = []
+    #print(bottle_tiles)
     for y in range(agent.map_tools.height):
         heat_map_row = []
         for x in range(agent.map_tools.width):
             if int(agent.map_tools.is_walkable(x, y)):
                 b = False
-                #b = print_depth(bottle_map, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
-                tile = Point2DI(x, y)
-                if tile in bottle_tiles:
-                    heat_map_row.append(2)
-                    b = True
+                #b = print_depth(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                b = print_gate_tiles(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #print(bottle_tiles)
                 if not b:
                     heat_map_row.append(1)
             else:

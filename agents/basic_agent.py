@@ -56,10 +56,7 @@ class BasicAgent(pycc.IDABot):
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
-        list = bottle.get_bottlenecks(self)
-        for elm in list:
-           print(elm)
-        #bottle.get_offset_coords(Point2DI(2, 2), 2)
+        list = bottle.get_gates(self)
 
         if DEBUG_VISUAL:
             self.set_up_debugging()
@@ -110,7 +107,9 @@ class BasicAgent(pycc.IDABot):
         color_map = {
             (0, 0): (0, 0, 0,),
             (1, 1): (255, 255, 255),
-            (2, 2): (0, 255, 0)
+            (2, 2): (0, 255, 0),
+            (3, 3): (255, 0, 255), 
+            (4, 4): (0, 0, 255)
         }
         self.debugger.set_color_map(color_map)
 
