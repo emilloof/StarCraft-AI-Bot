@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
+from tasks.attack_scripts import AttackScripts
 
 if TYPE_CHECKING:
     from modules.py_unit import PyUnit
@@ -17,6 +18,7 @@ class Attack(Task):
         self.target = pos
         self.previous_pos: Optional[Point2D] = None
         self.fails: int = 0
+        self.agent = agent
 
     def on_start(self, py_unit: PyUnit) -> Status:
         """
