@@ -10,23 +10,52 @@ from library import PLAYER_SELF, PLAYER_NEUTRAL
 def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
     var = False
     tile = Point2DI(x, y)
-    if tile in bottle_map.get(1, []):
+    if tile in bottle_map.get(7, []):
         heat_map_row.append(2)
         var = True
-    elif tile in bottle_map.get(2, []):
+    elif tile in bottle_map.get(8, []):
         heat_map_row.append(3)
         var = True
-    elif tile in bottle_map.get(3, []):
+    elif tile in bottle_map.get(9, []):
         heat_map_row.append(4)
+        var = True
+    elif tile in bottle_map.get(10, []):
+        heat_map_row.append(5)
+        var = True
+    elif tile in bottle_map.get(11, []):
+        heat_map_row.append(6)
+        var = True
+    elif tile in bottle_map.get(12, []):
+        heat_map_row.append(7)
         var = True
     return var
 
 # Skapad av eriei013 för testning av gate tiles
 def print_gate_tiles(bottle_tiles: list, heat_map_row: list, x: int, y: int) -> bool:
     tile = Point2DI(x, y)
-    #print(bottle_tiles)
-    if tile in bottle_tiles:
+
+    """is_in_list = any(tile in sublist for sublist in bottle_tiles)
+    if is_in_list:
         heat_map_row.append(2)
+        return True
+    return False"""
+    if tile in bottle_tiles[0]:
+        heat_map_row.append(2)
+        return True
+    if tile in bottle_tiles[1]:
+        heat_map_row.append(3)
+        return True
+    if tile in bottle_tiles[2]:
+        heat_map_row.append(4)
+        return True
+    if tile in bottle_tiles[3]:
+        heat_map_row.append(5)
+        return True
+    if tile in bottle_tiles[4]:
+        heat_map_row.append(6)
+        return True
+    if tile in bottle_tiles[5]:
+        heat_map_row.append(7)
         return True
     return False
 

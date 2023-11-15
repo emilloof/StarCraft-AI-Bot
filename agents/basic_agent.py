@@ -57,6 +57,7 @@ class BasicAgent(pycc.IDABot):
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
         list = bottle.get_gates(self)
+        #map = bottle.get_bottle_map(self)
 
         if DEBUG_VISUAL:
             self.set_up_debugging()
@@ -109,7 +110,10 @@ class BasicAgent(pycc.IDABot):
             (1, 1): (255, 255, 255),
             (2, 2): (0, 255, 0),
             (3, 3): (255, 0, 255), 
-            (4, 4): (0, 0, 255)
+            (4, 4): (0, 0, 255), 
+            (5, 5): (128, 128, 128),
+            (6, 6): (255, 0, 0),
+            (7, 7): (255, 255, 0)
         }
         self.debugger.set_color_map(color_map)
 
