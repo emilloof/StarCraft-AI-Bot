@@ -9,6 +9,14 @@ from library import PLAYER_SELF, PLAYER_NEUTRAL
 
 def debug_map(agent: BasicAgent) -> None:
     """Displays the map in a separate window."""
+    agent.debugger.set_display_values(path_debug(agent))
+
+def path_debug(agent: BasicAgent) -> dict:
+    """Displays the map in a separate window."""
+    return {(x, y): int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width) for y in range(agent.map_tools.height)}
+
+def heat_map_debug(agent: BasicAgent) -> None:
+    """Displays the map in a separate window."""
     heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
                 for y in range(agent.map_tools.height)]
     agent.debugger.set_display_values(heat_map)
@@ -52,3 +60,8 @@ def up_up_down_down_left_right_left_right_b_a_start(agent: BasicAgent) -> None:
     agent.debug_give_all_resources()
     agent.debug_give_all_resources()
     agent.debug_give_all_resources()
+
+
+def control_enemy(agent: BasicAgent) -> None:
+    """Gives control of enemy units to the player."""
+    agent.debug_enemy_control()

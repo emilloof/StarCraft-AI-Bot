@@ -10,7 +10,7 @@ from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UN
 from modules.extra import unit_types_by_condition
 
 if DEBUG_VISUAL:
-    from visualdebugger.heat_map_debugger import HeatMapDebugger
+    from visualdebugger.path_debugger import PathDebugger
 
 if DEBUG_LOGS:
     from modules.tictoc import TicToc
@@ -41,7 +41,7 @@ class BasicAgent(pycc.IDABot):
         self.COMBAT_TYPES = set()
 
         if DEBUG_VISUAL:
-            self.debugger = HeatMapDebugger()
+            self.debugger = PathDebugger()
 
         if DEBUG_LOGS:
             self.timer = TicToc(prints=DEBUG_CONSOLE)
@@ -59,6 +59,7 @@ class BasicAgent(pycc.IDABot):
             self.debugger.on_step(lambda: debug.debug_map(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
+            debug.control_enemy(self)
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
