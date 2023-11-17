@@ -23,6 +23,10 @@ class PyUnit:
         self.max_weapon_cooldown = 0
         self._last_weapon_cooldown = 0
 
+        self.p_value = unit.unit_type.attack_range
+        # time to keep the unit in knowledge base before determined old knowledge
+        self.keep_time = 0
+
     def __repr__(self):
         return f"<PyUnit: {self.unit_type.name}, {self.id}>"
 

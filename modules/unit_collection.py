@@ -98,6 +98,10 @@ class UnitCollection:
             self.py_units[unit.id] = py_unit
             self.add_to_group(unit.player, py_unit)
 
+            # add keep_time value if enemy unit
+            if unit.player == PLAYER_ENEMY:
+                py_unit.keep_time = self.agent.current_frame + self.agent.config.TIME_KEEP_ENEMY_UNIT()
+
             # The refinery is added to the group of its closest base, so it can easily be found when tasks are generated
             if unit.player == PLAYER_SELF and unit.unit_type.is_refinery:
                 correct_base = min(self.agent.base_location_manager.get_occupied_base_locations(PLAYER_SELF),

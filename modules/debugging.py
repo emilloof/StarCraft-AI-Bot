@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from library import Point2DI
 
+from modules.enemy_debugging import debug_enemies, debug_enemies_text
+
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
@@ -24,20 +26,36 @@ def get_neighbours(agent: BasicAgent, x: int, y: int) -> dict:
     }
     return neighbours
 
+mapd = dict()
+on = False
+
 def mother_debugger(agent: BasicAgent) -> None:
-    debug_terrain(agent)
-    
+    #map = dict()
+    #map.update(debug_terrain(agent))
+    #map.update(debug_enemies(agent))
+    global mapd
+    global on
+    # mapd.update(debug_enemies(agent))
+    print(on)
+    #if mapd:
+    #    agent.debugger.set_display_values(mapd, (agent.map_tools.width, agent.map_tools.height))
+
+    if on:
+        agent.debugger.set_display_values({(50, 50): 1}, (agent.map_tools.width, agent.map_tools.height))
+        on = not on
+    else:
+        on = not on
+        agent.debugger.set_display_values({(50, 50): 0}, (agent.map_tools.width, agent.map_tools.height))
 
 def debug_terrain(agent: BasicAgent) -> None:
-    map_size = (agent.map_tools.width, agent.map_tools.height)
-    map = dict()
+    tmap = dict()
     for y in range(agent.map_tools.height):
         for x in range(agent.map_tools.width):
             if agent.map_tools.is_walkable(x, y):
                 for neighbour in get_neighbours(agent, x, y).values():
                     if not agent.map_tools.is_walkable(neighbour[0], neighbour[1]):
-                        map[neighbour] = 1
-    agent.debugger.set_display_values(map, map_size)
+                        tmap[neighbour] = 1
+    return tmap
 
 def debug_map(agent: BasicAgent) -> None:
     """Displays the map in a separate window."""

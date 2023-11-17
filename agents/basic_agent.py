@@ -6,9 +6,10 @@ from modules.task_manager import TaskManager
 from modules.unit_collection import UnitCollection
 from modules.py_building_placer import PyBuildingPlacer
 from modules import debugging as debug
-from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
+from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_ENEMIES, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
 from modules.extra import unit_types_by_condition
+from potential import update_flows
 
 if DEBUG_VISUAL:
     from visualdebugger.path_debugger import PathDebugger
@@ -81,6 +82,8 @@ class BasicAgent(pycc.IDABot):
 
             self.unit_collection.on_step()
 
+            update_flows(self)
+
         if self.current_frame % FRAME_SKIP == 1:
             new_units = [u for u in self.unit_collection.new_units_this_step if u.player == pycc.PLAYER_SELF]
             self.task_manager.on_step(new_units)
@@ -99,6 +102,9 @@ class BasicAgent(pycc.IDABot):
             debug.debug_units(self)
         if DEBUG_TEXT:
             debug.debug_text(self)
+        if DEBUG_ENEMIES:
+            debug.debug_enemies(self)
+            # debug.debug_enemies_text(self)
 
     def set_up_debugging(self) -> None:
         """Set up visual debugger"""
