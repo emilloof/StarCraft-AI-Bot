@@ -1,5 +1,6 @@
 from typing import Union
 import library as pycc
+from border_tiles import get_list_of_bottlenecks
 from modules.build_order import BuildOrder
 from modules.task_manager import TaskManager
 from modules.unit_collection import UnitCollection
@@ -53,10 +54,12 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
+
+        # bottlenecks = get_list_of_bottlenecks(self)
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self))
+            self.debugger.on_step(lambda: debug.debug_terrain(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
             debug.control_enemy(self)
@@ -103,7 +106,8 @@ class BasicAgent(pycc.IDABot):
         # sets the colormap for the debugger {(interval): (r, g, b)}
         color_map = {
             (0, 0): (0, 0, 0,),
-            (1, 1): (255, 255, 255)
+            (1, 1): (255, 255, 255),
+            (2, 2): (0, 255, 0)
         }
         self.debugger.set_color_map(color_map)
 

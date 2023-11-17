@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from library import Point2DI
 
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
@@ -7,9 +8,55 @@ if TYPE_CHECKING:
 from library import PLAYER_SELF, PLAYER_NEUTRAL
 
 
+def print_depth(bottle_map: list, heat_map_row: list, x: int, y: int) -> bool:
+    tile = Point2DI(x, y)
+    if bottle_map[tile] == 1:
+        heat_map_row.append(2)
+        return True
+    return False
+
+def get_neighbours(agent: BasicAgent, x: int, y: int) -> dict:
+    neighbours = {
+        'left': (x - 1, y) if x > 0 else None,
+        'right': (x + 1, y) if x < agent.map_tools.width - 1 else None,
+        'up': (x, y - 1) if y > 0 else None,
+        'down': (x, y + 1) if y < agent.map_tools.height - 1 else None
+    }
+    return neighbours
+
+def mother_debugger(agent: BasicAgent) -> None:
+    debug_terrain(agent)
+    
+
+def debug_terrain(agent: BasicAgent) -> None:
+    map_size = (agent.map_tools.width, agent.map_tools.height)
+    map = dict()
+    for y in range(agent.map_tools.height):
+        for x in range(agent.map_tools.width):
+            if agent.map_tools.is_walkable(x, y):
+                for neighbour in get_neighbours(agent, x, y).values():
+                    if not agent.map_tools.is_walkable(neighbour[0], neighbour[1]):
+                        map[neighbour] = 1
+    agent.debugger.set_display_values(map, map_size)
+
 def debug_map(agent: BasicAgent) -> None:
     """Displays the map in a separate window."""
     agent.debugger.set_display_values(path_debug(agent))
+
+def debug_map(agent: BasicAgent, bottlenecks : dict) -> None:
+    """Displays the map in a separate window."""
+    heat_map = [[0 for _ in range(agent.map_tools.width)] for _ in range(agent.map_tools.height)]
+    for y in range(agent.map_tools.height):
+        for x in range(agent.map_tools.width):
+            if int(agent.map_tools.is_walkable(x, y)):
+                b = False
+                b = print_depth(bottlenecks, heat_map[y], x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                if not b:
+                    heat_map[y][x] = 1
+            
+    agent.debugger.set_display_values(heat_map)
+
+    # agent.debugger.set_display_values(path_debug(agent))
 
 def path_debug(agent: BasicAgent) -> dict:
     """Displays the map in a separate window."""
