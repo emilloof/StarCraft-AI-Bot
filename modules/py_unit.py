@@ -22,6 +22,7 @@ class PyUnit:
         self.agent: BasicAgent = agent
         self.max_weapon_cooldown = 0
         self._last_weapon_cooldown = 0
+       
 
     def __repr__(self):
         return f"<PyUnit: {self.unit_type.name}, {self.id}>"
@@ -67,3 +68,7 @@ class PyUnit:
     def remove_group(self, key: Any) -> None:
         """Removes a group from unit's groups"""
         self.groups.remove(key)
+
+    def get_hp(self):
+        unit_hp = self.unit.hit_points
+        return unit_hp

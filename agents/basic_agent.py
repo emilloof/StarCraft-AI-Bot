@@ -91,8 +91,8 @@ class BasicAgent(pycc.IDABot):
             for key, val in self.timer:
                 self.logger.add(key, val)
             self.timer.reset()
-        self.strategy.create_bayes_model(self)
-        exit()
+        self.strategy.get_hit_points(self)
+        #exit()
 
         if DEBUG_UNIT:
             debug.debug_units(self)

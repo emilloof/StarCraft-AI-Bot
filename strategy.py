@@ -5,17 +5,31 @@ from pgmpy.models import  BayesianNetwork
 from pgmpy.factors.discrete import TabularCPD
 
 
+ # Lists the units that are classified as offensive
+OFFENSIVE_UNITS = ['TERRAN_MARINE', 'TERRAN_MARAUDER', 'TERRAN_REAPER', 'TERRAN_HELLION', 
+                   'TERRAN_HELLBAT', 'TERRAN_WIDOWMINE', 'TERRAN_SIEGETANK', 'TERRAN_CYCLONE', 
+                   'TERRAN_THOR', 'TERRAN_BANSHEE', 'TERRAN_BATTLECRUISER']
+# Least amount of offensive unit we want to have to choose an offensive strategy
+LIMIT_OFF_UNITS = 25
+
+
 class Strategy:
+
+    
     def __init__(self) -> None:
         self.unit_collecition = UnitCollection
         self.py_unit = PyUnit
-        G = BayesianNetwork()
+        self.unit = Unit
+       
+
+       
+        
        
     
     def print_unit_collection(self):
         
         unit_dict = {}
-        for pyunit in self.unit_collection.get_group(PLAYER_ENEMY):
+        for pyunit in self.unit_collection.get_group():
             if pyunit.unit_type.name in unit_dict.keys():
                 unit_dict[pyunit.unit_type.name] += 1
             else:
@@ -24,7 +38,7 @@ class Strategy:
         
         print(unit_dict)
 
-    def create_bayes_model(self):
+    def create_bayes_model(self) -> BayesianNetwork:
         strategy_model = BayesianNetwork(
             [
                  ("> 25 offensive units", "Offensive"),
@@ -85,4 +99,21 @@ class Strategy:
         print("Edges in the model: ", strategy_model.edges())
 
         return strategy_model
+    
+        
+    def get_number_offensive_units(self, player=PLAYER_SELF) -> int:
+        units = 0
+        for pyunit in self.unit_collection.get_group(player):
+            if pyunit.unit_type.name in OFFENSIVE_UNITS:
+                units += 1
+
+        return units
+    
+    def get_hit_points(self):
+        hit_points = 0
+        for pyunit in self.unit_collection.get_group(PLAYER_SELF):
+            print(f'UnitType: {pyunit.unit_type.name}, HP: {pyunit.get_hp()}')
+        return hit_points
+    
+ 
         
