@@ -7,10 +7,13 @@ if TYPE_CHECKING:
 from library import PLAYER_SELF, PLAYER_NEUTRAL
 
 # Skapad av eriei013 för testning av depth map
-def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
+def print_depth(bottle_map: list, heat_map_row: list, x: int, y: int) -> bool:
     var = False
     tile = Point2DI(x, y)
-    if tile in bottle_map.get(1, []):
+    if tile in bottle_map:
+        heat_map_row.append(2)
+        var = True
+    """if tile in bottle_map.get(1, []):
         heat_map_row.append(2)
         var = True
     elif tile in bottle_map.get(2, []):
@@ -24,18 +27,25 @@ def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
         var = True
     elif tile in bottle_map.get(5, []):
         heat_map_row.append(6)
-        var = True
+        var = True"""
     return var
 
 # Skapad av eriei013 för testning av gate tiles
 def print_gate_tiles(bottle_tiles: list, heat_map_row: list, x: int, y: int) -> bool:
     tile = Point2DI(x, y)
 
-    is_in_list = any(tile in sublist for sublist in bottle_tiles)
+    """is_in_list = any(tile in sublist for sublist in bottle_tiles)
     if is_in_list:
         heat_map_row.append(2)
         return True
-    return False
+    return False"""
+    color = 2
+    for gate in bottle_tiles:
+        if tile in gate:
+            for pos in gate:
+                heat_map_row.append(color)
+                return True
+    return False    
     """if tile in bottle_tiles[7]:
         heat_map_row.append(2)
         return True
@@ -84,8 +94,8 @@ def debug_map(agent: BasicAgent, bottle_tiles: list) -> None:
         for x in range(agent.map_tools.width):
             if int(agent.map_tools.is_walkable(x, y)):
                 b = False
-                #b = print_depth(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
-                b = print_gate_tiles(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                b = print_depth(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #b = print_gate_tiles(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
                 #print(bottle_tiles)
                 if not b:
                     heat_map_row.append(1)
