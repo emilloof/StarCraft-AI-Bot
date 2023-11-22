@@ -15,15 +15,14 @@ from library import PLAYER_SELF, PLAYER_NEUTRAL
 def get_bottle_map(agent: BasicAgent) -> dict:
 
     map = get_list_of_bottlenecks(agent)
-    list = set_gate_tiles(agent, map)
-    return list
+    return map
 
 
 def get_gates(agent: BasicAgent) -> list:
 
     map = get_list_of_bottlenecks(agent)
     gates = set_gate_tiles(agent, map)
-    gates = update_gate_clusters(agent, gates)
+    #gates = update_gate_clusters(agent, gates)
     #gates = build_gates(agent, gates)
 
     """complete_gates = []
@@ -49,7 +48,7 @@ def get_list_of_bottlenecks(agent: BasicAgent) -> dict:
 
 def get_depth_of_tile(agent: BasicAgent, tile: Point2DI, last_found_depth: int) -> None:
     """ Returns the distance between a walkable tile and its closest wall tile """
-    current_depth = last_found_depth - 1
+    """current_depth = last_found_depth - 1
     depth = 0
     while depth == 0:
         neighbours = get_neighbours(agent, current_depth, tile)
@@ -61,62 +60,55 @@ def get_depth_of_tile(agent: BasicAgent, tile: Point2DI, last_found_depth: int) 
                     wall_threshold = ((12-current_depth)/28) + 1
                 wall_tiles_found += 1
                 if round(wall_threshold) <= wall_tiles_found:
-                    #depth_map[tile] = round(math.log2(current_depth) + 1)
                     depth = round(math.log2(current_depth) + 1)
                     break
-                #wall_tiles_found += 1
         current_depth += 1
 
+    return depth"""
+    depth = 0
+    current_depth = last_found_depth - 1
+    while depth == 0:
+        offsets = get_neighbours(agent, current_depth, tile)
+        for offset in offsets:
+            if agent.map_tools.is_valid_tile(offset):
+                if not agent.map_tools.is_walkable(offset):
+                    depth = current_depth
+                    break
+        current_depth = current_depth + 1
     return depth
 
 
+
 def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> list:
-    """ Istället för att gå igenom random rutor så att det blir fel, kolla i labelled tiles för att sedan gå igenom
-     deras neighbours så att vattnet alltid stiger utåt även för dem med samma djup
-      Pseudokod:
-         while curr_water_level >= 0:
-         Är labelled tiles tom?
-            for tile in labelled_tiles med djup curr_water_level + 1:
-                hämta omärkta neighbours för tilen
-                hämta alla tiles för curr_water_level
-                har grannen curr_water_level som depth?
-                    har grannen andra grannar med annan label?
-                        Gör samma som innan dvs (sätt som gate)
-                    sätt till samma label som den i labelled tiles
-                labelled tiles bör vara uppdaterad så kolla nu om det finns fler tiles med curr_water_level fast som inte är granne till föregående djup
-                Om det gör det så kolla i labelled tiles med samma djup och gör samma procedur. Om det sedan finns tiles kvar att märka på det djupet
-                så står dem själva och bör bli labelled med ny label"""
     
-    """ curr_water_level = len(depth_map)  
+    """curr_water_level = len(depth_map) 
     labelled_tiles = {}     
     gate_clusters = []         
     current_label = 1
     region_pairs = []
     tiles = []
-    while curr_water_level >= 0:
-        for tile in depth_map.get(curr_water_level, []):
+    while curr_water_level >= 11:
+        listf = depth_map.get(curr_water_level, [])
+        sorted_list = sorted(listf, key=lambda point: point.x)
+        print("NEW DEPTH")
+        for tile in sorted_list:
+            print(tile)
             neighbours = get_labelled_neighbours(agent, labelled_tiles, tile)
+            
             if len(neighbours) > 0:
                 values = list(neighbours.values())
                 if len(set(values)) > 1: # Does the neighbours have different labels?
                     add_tile_to_gate_cluster(neighbours, tile, gate_clusters, region_pairs)
+                    print("TILEGATES", tile)
                     tiles.append(tile)
                 labelled_tiles[tile] = values[0] # Give tile same label as any neighbour or the only neighbour
             else:
                 # Give tiles without labelled neigbours a unique label
                 labelled_tiles[tile] = current_label
                 current_label += 1
-            tiles_to_label
         curr_water_level -= 1
 
     return tiles #gate_clusters """
-
-    """ Testa göra en is_neighbour funktion som kollar om en tile som är på rätt djup är granne till en redan labelled tile, sätt sedan dens label och ta väck den från listan
-     while kommer då köra tills llistan är tom för varje djup """
-    
-    """ Annat alternativ är att skapa en most recently labelled tiles som uppdateras så om dem på djup 6 har blivit satta så är de uttyersta tilesen från dem most recently 
-     sen när deras grannar på nästa djup är satta så tas dem från djup 6 väck och en "ring" av dem nyligen satta på djup 5 finns då, men labelled tiles finns kvar eftersom 
-      man måste veta att de på djup 6 tex är lablled så att dem inte blir giltiga grannar senare. """
 
     curr_water_level = len(depth_map)  
     labelled_tiles = {}
@@ -126,41 +118,35 @@ def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> list:
     region_pairs = []
 
     depth_map_copy = depth_map.copy()
-    test_list = []
-   
-    while curr_water_level >= 5:
-        tiles_to_label = depth_map_copy.get(curr_water_level, [])
-        print(len(tiles_to_label))
-        curr = 0
-        while tiles_to_label:
-            #print(len(tiles_to_label))
-            curr_tiles_to_label = get_curr_tiles_to_label(agent, recently_labelled_tiles, labelled_tiles, tiles_to_label)
-            if curr == 0:
-                print(len(curr_tiles_to_label))
-            for tile in curr_tiles_to_label:
+    test_list = {}
+    
+    while curr_water_level >= 0:
+        tiles_to_label = depth_map_copy.get(curr_water_level, [])   # Tiles at that level
+        sorted_list = sorted(tiles_to_label, key=lambda point: (point.x, point.y))
+        while sorted_list:
+            curr_tiles_to_label = get_curr_tiles_to_label(agent, recently_labelled_tiles, labelled_tiles, sorted_list)
+            if not curr_tiles_to_label:
+                curr_tiles_to_label = sorted_list
+            for tile in list(curr_tiles_to_label):
                 neighbours = get_labelled_neighbours(agent, labelled_tiles, tile)
                 if len(neighbours) > 0:
                     values = list(neighbours.values())
                     if len(set(values)) > 1: # Does the neighbours have different labels?
                         add_tile_to_gate_cluster(neighbours, tile, gate_clusters, region_pairs)
-                        test_list.append(tile)
                     labelled_tiles[tile] = values[0] # Give tile same label as any neighbour or the only neighbour
                 else:
                     # Give tiles without labelled neigbours a unique label
                     labelled_tiles[tile] = current_label
                     current_label += 1
                 recently_labelled_tiles[tile] = labelled_tiles[tile]
-                if tile in tiles_to_label:
-                    tiles_to_label.remove(tile)
-            curr += 1
+                sorted_list.remove(tile)
             
         curr_water_level -= 1
-
-    return test_list #gate_clusters
+    return gate_clusters
 
 
 def get_curr_tiles_to_label(agent: BasicAgent, recently_labelled_tiles: dict, labelled_tiles: dict, tiles_to_label: list) -> list:
-
+    # fixa så att man tar bort från recently efter hand
     if len(recently_labelled_tiles) == 0:
         return tiles_to_label
     
@@ -171,9 +157,10 @@ def get_curr_tiles_to_label(agent: BasicAgent, recently_labelled_tiles: dict, la
         for neighbour in neighbours:
             if agent.map_tools.is_walkable(neighbour):
                 if not neighbour in labelled_tiles:
-                    if neighbour in tiles_to_label:
-                        curr_tiles_to_label.append(neighbour)
-        recently_labelled_tiles.pop(tile)
+                    if not neighbour in curr_tiles_to_label:
+                        if neighbour in tiles_to_label:
+                            curr_tiles_to_label.append(neighbour)
+        #recently_labelled_tiles.pop(tile)
     
     return curr_tiles_to_label
 
@@ -213,7 +200,7 @@ def build_gates(agent: BasicAgent, gate_clusters: list) -> list:
         for j, end_tile in enumerate(selected_tiles):
             end_tile = Point2D(end_tile)
             if i != j:
-                distance = agent.map_tools.get_ground_distance(start_tile, end_tile)
+                distance = agent.map_tools.get_ground_distance(start_tile, end_tile) # Kanske fågelväg
                 if distance > 0 and (distance < shortest_dist):
                     shortest_dist = distance
                     closest_tile = end_tile

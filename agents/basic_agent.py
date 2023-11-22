@@ -56,17 +56,17 @@ class BasicAgent(pycc.IDABot):
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
-        """list = bottle.get_gates(self)"""
+        list = bottle.get_gates(self)
         """for sub_list in list:
             print(sub_list)
             print("new bottleneck")"""
-        map = bottle.get_bottle_map(self)
+        #map = bottle.get_bottle_map(self)
         #print(map)
 
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self, map))
+            self.debugger.on_step(lambda: debug.debug_map(self, list))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
         
