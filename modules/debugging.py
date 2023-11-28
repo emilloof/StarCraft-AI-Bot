@@ -52,7 +52,7 @@ def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
     return var
 
 # Skapad av eriei013 för testning av gate tiles
-def print_gate_tiles(bottle_tiles: dict, heat_map_row: list, x: int, y: int) -> bool:
+def print_gate_tiles(bottle_tiles: list, heat_map_row: list, x: int, y: int) -> bool:
     tile = Point2DI(x, y)
 
     """is_in_list = any(tile in sublist for sublist in bottle_tiles)
@@ -60,15 +60,20 @@ def print_gate_tiles(bottle_tiles: dict, heat_map_row: list, x: int, y: int) -> 
         heat_map_row.append(2)
         return True
     return False"""
-    color = 1
+    for l in bottle_tiles:
+        if tile in l:
+            heat_map_row.append(2)
+            return True
+    return False
+    """color = 2
     for tilex in bottle_tiles:
         if tile in tilex:
             heat_map_row.append(color)
             return True
         color += 1
         if color > 7:
-            color = 1
-    return False    
+            color = 2
+    return False """
     """if tile in bottle_tiles[7]:
         heat_map_row.append(2)
         return True
@@ -106,7 +111,7 @@ def print_gate_tiles(bottle_tiles: dict, heat_map_row: list, x: int, y: int) -> 
     return False"""
 
 
-def debug_map(agent: BasicAgent, bottle_tiles: dict) -> None:
+def debug_map(agent: BasicAgent, bottle_tiles: list) -> None:
     """Displays the map in a separate window."""
     """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
                 for y in range(agent.map_tools.height)]"""
