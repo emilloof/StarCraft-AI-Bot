@@ -62,8 +62,18 @@ def print_gate_tiles(bottle_tiles: list, heat_map_row: list, x: int, y: int) -> 
     return False"""
     for l in bottle_tiles:
         if tile in l:
-            heat_map_row.append(2)
-            return True
+            if len(l) > 1:
+                #if len(l) > 1:
+                heat_map_row.append(2)
+                return True
+            else:
+                heat_map_row.append(3)
+                return True
+        
+
+            """else:
+                heat_map_row.append(3)
+                return True"""
     return False
     """color = 2
     for tilex in bottle_tiles:

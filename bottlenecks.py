@@ -1,5 +1,5 @@
 ### Implementerad av: eriei013 (Byggnadsplacering)
-### Beskrivning: Tar fram en lista av alla flaskhalsar där varje flaskhals innehåller flera flaskhalsrutor
+### Beskrivning: Tar fram en lista innehållande listor som representerar flaskhalsar
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -27,7 +27,10 @@ def get_gates(agent: BasicAgent) -> list:
 
     complete_gates = []
     for gate_pair in gates:
-        complete_gates.append(find_path(agent, gate_pair))
+        if len(gate_pair) > 1:
+            bottleneck = set_path(agent, gate_pair)
+            if len(bottleneck) < 13:
+                complete_gates.append(bottleneck)
     return complete_gates
 
 
@@ -174,7 +177,7 @@ def update_gate_clusters(agent: BasicAgent, gate_clusters: list) -> list:
 
     for gate_cluster in gate_clusters:
         upd_cluster = {tile for tile in gate_cluster if tile_adj_to_wall(agent, tile)}
-        if len(upd_cluster) >= 2:
+        if len(upd_cluster) >= 1:   # Removes empty sets
             upd_gate_clusters.append(split_cluster(agent, upd_cluster))
 
     return upd_gate_clusters
@@ -210,17 +213,55 @@ def split_cluster(agent: BasicAgent, gate_cluster: set) -> list:
 def build_gates(agent: BasicAgent, gate_clusters: list) -> list:
     """ Creates start and end tile for each bottleneck """
     selected_tiles = []
+    tiles_to_pair = []
     for gate_cluster in gate_clusters:
         pair = []
         if len(gate_cluster) > 1:
             for x in gate_cluster:
                 pair.append(x.pop())
             selected_tiles.append(pair)
+        else:
+            tiles_to_pair.append(gate_cluster[0].pop())
+    created_pairs = pair_tiles(tiles_to_pair)
+    selected_tiles.extend(created_pairs)
     return selected_tiles
 
 
-def find_path(agent: BasicAgent, gate_pair: list):
-    """ Finds a walkable path from a start tile to an end tile """
+def pair_tiles(pairless_gate_tiles: list) -> list:
+
+    paired_tiles = []
+    threshold = 17
+    result = []
+
+    for i in range(len(pairless_gate_tiles)):
+        shortest_dist = float('inf')
+        closest_tile = None
+        start_tile = pairless_gate_tiles[i]
+        if len(paired_tiles) == len(pairless_gate_tiles) - 1:
+            result.append([start_tile])
+
+        for j in range(i + 1, len(pairless_gate_tiles)):
+            
+            end_tile = pairless_gate_tiles[j]
+
+            if start_tile not in paired_tiles and end_tile not in paired_tiles:
+                dist = distance_between_tiles(start_tile, end_tile)
+                if dist < threshold:
+                    if dist < shortest_dist:
+                        shortest_dist = dist
+                        closest_tile = end_tile
+                # kansek lägga till else och lägga till i lista
+        if closest_tile:
+            result.append([start_tile, closest_tile])
+            paired_tiles.extend([start_tile, closest_tile])
+        else:
+            result.append([start_tile])
+
+    return result
+
+
+def set_path(agent: BasicAgent, gate_pair: list):
+    """ BFS algorithm that finds a walkable path from a start tile to an end tile """
     start = gate_pair[0]
     end = gate_pair[1]
     queue = [[start]]
@@ -237,9 +278,30 @@ def find_path(agent: BasicAgent, gate_pair: list):
                     new_path.append(neighbour)
                     queue.append(new_path)
                     if neighbour == end:
-                        return new_path  
+                        return refine_bottleneck(agent, new_path)  
             visited.append(curr_tile)
     return None
+
+
+def refine_bottleneck(agent: BasicAgent, bottleneck: list) -> list:
+    """ Removes unnecessary tiles from a bottleneck """
+    start_tile = None
+    end_tile = None
+
+    for index in range(len(bottleneck) // 2):
+        curr_start = bottleneck[index]
+        curr_end = bottleneck[-1 - index]
+
+        if curr_start == curr_end:
+            break
+        if tile_adj_to_wall(agent, curr_start):
+            start_tile = curr_start
+        if tile_adj_to_wall(agent, curr_end):
+            end_tile = curr_end
+        
+    refined_bottleneck = bottleneck[bottleneck.index(start_tile):bottleneck.index(end_tile) + 1]
+
+    return refined_bottleneck
 
 
 def add_tile_to_gate_cluster(neighbours: dict, tile: Point2DI, gate_clusters: list, region_pairs: list) -> None:
@@ -254,6 +316,11 @@ def add_tile_to_gate_cluster(neighbours: dict, tile: Point2DI, gate_clusters: li
     else:
         region_pairs.append(adj_regions)
         gate_clusters.append({tile})
+
+
+def distance_between_tiles(start: Point2DI, end: Point2DI) -> int:
+    """ Calculates the distance between to tiles ignoring obstacles """
+    return math.sqrt((start.x - end.x)**2 + (start.y - end.y)**2)
 
 
 def get_adjacent_regions(neighbours: dict) -> list:
