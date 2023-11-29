@@ -107,6 +107,7 @@ class BasicAgent(pycc.IDABot):
         
         # David
         self.time += 1
+        # Only run the strategy decider every 100 tick
         if self.time % 100 == 0:
             print("time: ", self.time)
             self.curr_strategy, self.hp_tracker = self.strategy.choose_strategy(self,

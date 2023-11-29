@@ -145,6 +145,7 @@ class Strategy:
         """ Returns 1 if any building has lost hp since last check, else return 0 """
         if hp_tracker != updated_hp_tracker:
             for pyunit in self.unit_collection.get_group(PLAYER_SELF):
+                
                 if pyunit.unit_type.name in STRUCTURES and \
                     pyunit.id in updated_hp_tracker and \
                         pyunit.id in hp_tracker and \
