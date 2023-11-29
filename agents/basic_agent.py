@@ -8,7 +8,10 @@ from modules import debugging as debug
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
 from modules.extra import unit_types_by_condition
+
+# David
 from strategy import Strategy
+
 
 if DEBUG_VISUAL:
     from visualdebugger.heat_map_debugger import HeatMapDebugger
@@ -30,6 +33,13 @@ class BasicAgent(pycc.IDABot):
         self.internal_gas = 0
         self.internal_minerals = 0
         self.internal_supply = 0
+        
+        # David
+        self.hp_tracker = {}
+        self.strategy = Strategy
+        self.bayes_model = self.strategy.create_bayes_model(self)
+        self.curr_strategy = ''
+        self.time = 0
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
@@ -41,7 +51,7 @@ class BasicAgent(pycc.IDABot):
         self.WORKER_TYPES = set()
         self.COMBAT_TYPES = set()
 
-        self.strategy = Strategy
+       
 
         if DEBUG_VISUAL:
             self.debugger = HeatMapDebugger()
@@ -62,6 +72,9 @@ class BasicAgent(pycc.IDABot):
             self.debugger.on_step(lambda: debug.debug_map(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
+        
+
+        
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
@@ -91,7 +104,19 @@ class BasicAgent(pycc.IDABot):
             for key, val in self.timer:
                 self.logger.add(key, val)
             self.timer.reset()
-        self.strategy.get_hit_points(self)
+        
+        # David
+        self.time += 1
+        if self.time % 100 == 0:
+            print("time: ", self.time)
+            self.curr_strategy, self.hp_tracker = self.strategy.choose_strategy(self,
+                                                                                self.strategy,
+                                                                                self.bayes_model, 
+                                                                                self.hp_tracker, 
+                                                                                self.strategy.get_hit_points(self), 
+                                                                                self.internal_minerals)
+            
+            print("best strat: ", self.curr_strategy)
         #exit()
 
         if DEBUG_UNIT:
