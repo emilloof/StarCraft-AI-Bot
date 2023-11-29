@@ -146,6 +146,24 @@ def unit_types_by_condition(agent: BasicAgent, condition: callable) -> set[UNIT_
     return {unit_typeid for unit_typeid in vars(UNIT_TYPEID).values() if
             isinstance(unit_typeid, UNIT_TYPEID) and condition(UnitType(unit_typeid, agent))}
 
+def get_neighbours(agent: BasicAgent, pos: tuple) -> list[tuple]:
+    return _get_neighbours(agent, pos, lambda x, y: (x, y))
+
+
+def get_neighbours(agent: BasicAgent, pos: Point2DI) -> list[Point2DI]:
+    return _get_neighbours(agent, pos.as_tuple(), lambda x, y: Point2DI(x, y))
+
+
+def _get_neighbours(
+    agent: BasicAgent, pos: tuple, return_type: callable
+) -> list[Union[tuple, Point2DI]]:
+    x, y = pos
+    return list(
+        return_type(x - 1, y) if x > 0 else None, # left
+        return_type(x + 1, y) if x < agent.map_tools.width - 1 else None, # right
+        return_type(x, y - 1) if y > 0 else None, # up
+        return_type(x, y + 1) if y < agent.map_tools.height - 1 else None # down
+        )
 
 Point2D.square_distance = lambda self, other: (self.x - other.x) ** 2 + (self.y - other.y) ** 2
 Point2D.__eq__ = lambda self, other: isinstance(other, Point2D) and self.square_distance(other) < 0.001 ** 2

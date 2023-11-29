@@ -25,7 +25,8 @@ class PyUnit:
 
         self.p_value = unit.unit_type.attack_range
         # time to keep the unit in knowledge base before determined old knowledge
-        self.keep_time = 0
+        self.last_seen = 0
+        # TODO: Add previous known position, in case Unit.position does not work
 
     def __repr__(self):
         return f"<PyUnit: {self.unit_type.name}, {self.id}>"

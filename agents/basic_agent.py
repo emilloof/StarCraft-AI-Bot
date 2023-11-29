@@ -1,7 +1,8 @@
 from typing import Union
 import library as pycc
-from border_tiles import get_list_of_bottlenecks
 from modules.build_order import BuildOrder
+# from modules.potential_flow.potential import update_flows
+from modules.potential_flow.regions import parse_regions
 from modules.task_manager import TaskManager
 from modules.unit_collection import UnitCollection
 from modules.py_building_placer import PyBuildingPlacer
@@ -9,7 +10,10 @@ from modules import debugging as debug
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_ENEMIES, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
 from modules.extra import unit_types_by_condition
-from potential import update_flows
+
+
+from icecream import install
+install()
 
 if DEBUG_VISUAL:
     from visualdebugger.path_debugger import PathDebugger
@@ -31,6 +35,8 @@ class BasicAgent(pycc.IDABot):
         self.internal_gas = 0
         self.internal_minerals = 0
         self.internal_supply = 0
+
+        self.regions = parse_regions("data/regions.json")
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
@@ -60,7 +66,7 @@ class BasicAgent(pycc.IDABot):
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_terrain(self))
+            self.debugger.on_step(lambda: debug.debug_region_borders(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
             debug.control_enemy(self)
@@ -82,7 +88,7 @@ class BasicAgent(pycc.IDABot):
 
             self.unit_collection.on_step()
 
-            update_flows(self)
+            # update_flows(self)
 
         if self.current_frame % FRAME_SKIP == 1:
             new_units = [u for u in self.unit_collection.new_units_this_step if u.player == pycc.PLAYER_SELF]
@@ -102,6 +108,7 @@ class BasicAgent(pycc.IDABot):
             debug.debug_units(self)
         if DEBUG_TEXT:
             debug.debug_text(self)
+            # debug.debug_region_text(self)
         if DEBUG_ENEMIES:
             debug.debug_enemies(self)
             # debug.debug_enemies_text(self)
@@ -113,7 +120,21 @@ class BasicAgent(pycc.IDABot):
         color_map = {
             (0, 0): (0, 0, 0,),
             (1, 1): (255, 255, 255),
-            (2, 2): (0, 255, 0)
+            (2, 2): (0, 255, 0),
+            (3, 3): (255, 0, 0),
+            (4, 4): (0, 0, 255),
+            (5, 5): (255, 255, 0),
+            (6, 6): (255, 0, 255),
+            (7, 7): (0, 255, 255),
+            (8, 8): (100, 100, 0),
+            (9, 9): (0, 100, 100),
+            (10, 10): (100, 0, 100),
+            (11, 11): (100, 100, 255),
+            (12, 12): (100, 255, 100),
+            (13, 13): (255, 100, 100),
+            (14, 14): (255, 150, 100),
+
+            (15, 15): (100, 100, 100)
         }
         self.debugger.set_color_map(color_map)
 

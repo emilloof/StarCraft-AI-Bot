@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from modules.potential_flow.regions import get_region
+
 if TYPE_CHECKING:
     from modules.py_unit import PyUnit
     from agents.basic_agent import BasicAgent
@@ -14,7 +16,7 @@ class Scout(Task):
     """Task for scouting a list of bases."""
 
     def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent):
-        super().__init__(prio=prio, candidates=agent.WORKER_TYPES)
+        super().__init__(prio=prio, candidates=agent.WORKER_TYPES, agent=agent)
         self.unit_type: Optional[UnitType] = None
         self.scout_bases: SimpleQueue[Point2D] = scout_bases
         self.scout_target: Optional[Point2D] = None
@@ -81,6 +83,10 @@ class Scout(Task):
         # We're still on the move.
         self.fails = 0
         self.previous_pos = py_unit.position
+
+        for tile in get_region(self.agent, self.agent.regions, py_unit.tile_position)[0]:
+            self.agent.map_tools.draw_tile(tile)
+
         return Status.NOT_DONE
 
     def switch_target(self, py_unit: PyUnit) -> Status:
