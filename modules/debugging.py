@@ -133,7 +133,7 @@ def debug_map(agent: BasicAgent, bottle_tiles: list) -> None:
             if int(agent.map_tools.is_walkable(x, y)):
                 b = False
                 #b = print_depth(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
-                b = print_gate_tiles(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #b = print_gate_tiles(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
                 #print(bottle_tiles)
                 if not b:
                     heat_map_row.append(1)

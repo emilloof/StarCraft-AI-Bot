@@ -1,6 +1,4 @@
 from typing import Union
-# jag la in
-from library import Point2DI
 import library as pycc
 from modules.build_order import BuildOrder
 from modules.task_manager import TaskManager
@@ -10,7 +8,8 @@ from modules import debugging as debug
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
 from modules.extra import unit_types_by_condition
-import bottlenecks as bottle
+import bottlenecks as bottle    # Implementerad av Erik
+import math # ERIk
 if DEBUG_VISUAL:
     from visualdebugger.heat_map_debugger import HeatMapDebugger
 
@@ -55,18 +54,37 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
+        #print(self.build_order) # ERIk
+        self.BOTTLENECKS = bottle.get_gates(self)   # Hämta alla flaskhalsar
 
-        list = bottle.get_gates(self)
-        """for sub_list in list:
-            print(sub_list)
-            print("new bottleneck")"""
-        #map = bottle.get_bottle_map(self)
-        #print(map)
+        representants = []
+        for i in range(len(self.BOTTLENECKS)):
+            representant = self.BOTTLENECKS[i]
+            representants.append([representant[0], i])
+        #self.BOTTLENECKS = []
+        
+        #print(self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF)) # The starting pos of our player
+        base_loc = self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF).position
+
+        list_of_dist = []
+        for rep in representants:
+            dist_from_base = math.sqrt((base_loc.x - rep[0].x)**2 + (base_loc.y - rep[0].y)**2)
+            list_of_dist.append([dist_from_base, rep[1]])
+
+        closest_list = sorted(list_of_dist, key=lambda x: x[0])
+
+        nearest_bottles = []
+        for closest in closest_list:
+            nearest_bottles.append(self.BOTTLENECKS[closest[1]])
+
+        for bott in nearest_bottles:
+            print(bott)
+            print("\n")
 
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self, list))
+            self.debugger.on_step(lambda: debug.debug_map(self, self.BOTTLENECKS))  
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
         
@@ -118,7 +136,7 @@ class BasicAgent(pycc.IDABot):
             (5, 5): (128, 128, 128),
             (6, 6): (255, 0, 0),
             (7, 7): (255, 255, 0)
-        }
+        }  
         self.debugger.set_color_map(color_map)
 
     def can_afford(self, unit_type: Union[pycc.UnitType, pycc.UPGRADE_ID]) -> bool:
