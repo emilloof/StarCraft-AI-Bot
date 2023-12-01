@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 from tasks import build
 from tasks import train
 from library import UnitType, TypeData, PLAYER_SELF, Point2D, UPGRADE_ID, Point2DI, UNIT_TYPEID, Color, \
-    BaseLocation, Race
+    BaseLocation, Race, PLAYER_ENEMY
 
 
 def get_addon(agent: BasicAgent, candidate: PyUnit) -> Optional[PyUnit]:
@@ -146,30 +146,59 @@ def unit_types_by_condition(agent: BasicAgent, condition: callable) -> set[UNIT_
     return {unit_typeid for unit_typeid in vars(UNIT_TYPEID).values() if
             isinstance(unit_typeid, UNIT_TYPEID) and condition(UnitType(unit_typeid, agent))}
 
-def get_neighbours(agent: BasicAgent, pos: tuple) -> list[tuple]:
-    return _get_neighbours(agent, pos, lambda x, y: (x, y))
-
-
-def get_neighbours(agent: BasicAgent, pos: Point2DI) -> list[Point2DI]:
-    return _get_neighbours(agent, pos.as_tuple(), lambda x, y: Point2DI(x, y))
-
+def get_neighbours(agent: BasicAgent, pos: Union[tuple, Point2DI]) -> list[Union[tuple, Point2DI]]:
+    if type(pos) == Point2DI:
+        print("is pointdi")
+        ret_val = _get_neighbours(agent, pos.as_tuple(), lambda x, y: Point2DI(x, y))
+        ic(ret_val)
+        return ret_val
+    else: # if type(pos) == tuple
+        return _get_neighbours(agent, pos, lambda x, y: (x, y))
 
 def _get_neighbours(
     agent: BasicAgent, pos: tuple, return_type: callable
 ) -> list[Union[tuple, Point2DI]]:
     x, y = pos
-    return list(
+    return [
         return_type(x - 1, y) if x > 0 else None, # left
         return_type(x + 1, y) if x < agent.map_tools.width - 1 else None, # right
         return_type(x, y - 1) if y > 0 else None, # up
         return_type(x, y + 1) if y < agent.map_tools.height - 1 else None # down
-        )
+    ]
+
+
+def get_enemies_in_radius(agent, position: Point2D, radius: int) -> set[PyUnit]:
+    """Returns a list of enemy units within a given radius of a given position."""
+    # units_in_radius = []
+
+    return agent.unit_collection.get_group(
+        lambda unit: unit.player == PLAYER_ENEMY
+        and position.square_distance(unit.position) <= radius
+    )
+
+    """for enemy in agent.unit_collection.get_group(PLAYER_ENEMY):
+        distance = position.distance(enemy.position)
+        if distance <= radius:
+            units_in_radius.append(enemy)
+
+    return units_in_radius"""
+
+# Wrapper function
+def point2d_to_tuple(func):
+    def wrapper(*args):
+        args = tuple(arg.as_tuple() if isinstance(arg, Point2D) else arg for arg in args)
+        return func(*args)
+    return wrapper
+
 
 Point2D.square_distance = lambda self, other: (self.x - other.x) ** 2 + (self.y - other.y) ** 2
 Point2D.__eq__ = lambda self, other: isinstance(other, Point2D) and self.square_distance(other) < 0.001 ** 2
+Point2D.as_tuple = lambda self: (self.x, self.y)
+Point2D.as_tile = lambda self: Point2DI(self.x, self.y)
 
 Point2DI.square_distance = lambda self, other: (self.x - other.x) ** 2 + (self.y - other.y) ** 2
 Point2DI.__add__ = lambda self, other: Point2DI(self.x + other.x, self.y + other.y)
+Point2DI.as_tuple = lambda self: (self.x, self.y)
 
 BaseLocation.__repr__ = lambda self: f"<BaseLocation: {self.position}>"
 

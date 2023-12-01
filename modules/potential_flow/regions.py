@@ -1,7 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
-from library import Point2DI, BaseLocation
+from library import Point2D, Point2DI, BaseLocation
 import json
 
 from modules.extra import get_neighbours
@@ -45,10 +45,13 @@ def regions_as_tuples(regions: list[tuple[set[Point2DI], Point2DI]]) -> list[tup
     return [region_as_tuple(region) for region in regions]
 
 def region_as_tuple(region: tuple[set[Point2DI], Point2DI]) -> tuple[set[tuple[int, int]], tuple[int, int]]:
-    return (
-        set((pos.x, pos.y) for pos in region[0]),
-        (region[1].x, region[1].y),
-    )
+    coordinates = set()
+    print(f"type: {type(region)}")
+    for pos in region[0]:
+        coordinates.add((pos.x, pos.y))
+    return (coordinates, (region[1].x, region[1].y))
+    # return (((pos.x, pos.y) for pos in region[0]), (region[1].x, region[1].y))
+    
     
 def get_region(agent: BasicAgent, regions: list[tuple[set[Point2DI], Point2DI]], tile: Point2DI) -> tuple[set[Point2DI], Point2DI]:
     """Returns the region that the tile is in."""
@@ -63,38 +66,54 @@ def get_region_polygon(agent: BasicAgent, regions: list[tuple[set[Point2DI], Poi
     pass
 
 # calculate center of region (with Point2DI), using the already established calculate_center function
-def calculate_center(region: set[Point2DI]) -> Point2DI:
+"""def calculate_center(region: set[Point2DI]) -> Point2DI:
     return Point2DI(*calculate_center(region_as_tuple(region)[0]))
 
-# calculate center of region
-def calculate_center(region: set[tuple]) -> tuple:
-    x = 0
-    y = 0
-    for pos in region:
-        x += pos[0]
-        y += pos[1]
-    return (x / len(region), y / len(region))
+def calculate_center(region: set[tuple[int, int]]) -> tuple[int, int]:
+    return _calculate_center(region.as_tuple)"""
 
+def calculate_center(region: Union[tuple[set[Point2DI], Point2DI], tuple[set[tuple], tuple]]) -> Union[Point2D, tuple]:
+    # calculate center of region
+    def _calculate_center(region: set[tuple]) -> tuple:
+        x = 0
+        y = 0
+        for pos in region:
+            x += pos[0]
+            y += pos[1]
+        return (x / len(region), y / len(region))
+
+    if isinstance(region[1], Point2DI):
+        center = tuple(map(int, _calculate_center(region_as_tuple(region)[0]))) # (1.0, 2.0) -> (1, 2)
+        return Point2D(center[0], center[1])
+    elif isinstance(region[1], tuple) == tuple:
+        print("am tuple")
+        return _calculate_center(region)
+    else:
+        raise TypeError("region must be of type set[Point2DI] or set[tuple]")
+
+# GÖR REGION TILL KLASS
 
 def get_region_border(agent: BasicAgent, region) -> list[Point2DI]:
     border = []
     for y in range(agent.map_tools.height):
         for x in range(agent.map_tools.width):
-            if (x, y) not in region[0]:
+            if Point2DI(x, y) not in region[0]:
                 for neighbour in get_neighbours(agent, Point2DI(x, y)):
+                    print(f"neighbour: {neighbour}")
                     if neighbour in region[0]:
+                        print("have neighbour")
                         border.append(neighbour)
 
 # get border perimeter
 
  
 # get base locations in region
-def get_base_locations_in_region(agent: BasicAgent, regions) -> list[BaseLocation]:
+def get_base_locations_in_region(agent: BasicAgent, region) -> list[BaseLocation]:
     base_locations_in_region = []
     for base_location in agent.base_location_manager.base_locations:
-        for region in regions:
-            if base_location.position in region[0]:
-                base_locations_in_region.append(base_location)
+        if base_location.position in region[0]:
+            print("yes it is")
+            base_locations_in_region.append(base_location)
     return base_locations_in_region
 
 ### ----------------- DEBUGGING ----------------- ###

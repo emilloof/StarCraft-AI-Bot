@@ -2,14 +2,15 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 from pygame import Vector2
+from modules.extra import point2d_to_tuple
 
-from modules.potential_flow.flows_enum import CENTER_SOURCE_SINK, CENTER_VORTEX, DISTANCE_TO_SWITCH_SOURCE_SINK, ENEMY_NEEDLE
 from modules.potential_flow.regions import calculate_center
 from library import Point2D
 
 from modules.py_unit import PyUnit
 
 if TYPE_CHECKING:
+    from modules.potential_flow.flow_scout import PotentialFlowScout
     from agents.basic_agent import BasicAgent
 
 
@@ -55,26 +56,29 @@ def needle_pval(scout, p, target, bias):
 
 # V(z) = ilog(z-z_start)
 # s=curReg_center, p=enemy_position
+@point2d_to_tuple
 def vortex_potential(scout, p):
+    ic(scout)
     x = p[0] - scout[0]  # x - x_start
     y = p[1] - scout[1]  # y - y_start
     r2 = x * x + y * y  # (x-x_start)^2 + (y-y_start)^2
-    return (y / r2, -x / r2)  # u, v
+    return Vector2(y / r2, -x / r2)  # u, v
 
 
 # S(z) = log(z-z_s)
+@point2d_to_tuple
 def source_potential(scout, p):
     x = p[0] - scout[0]
     y = p[1] - scout[1]
     r2 = 1.0 * x * x + y * y
-    return (x / r2, y / r2)
+    return Vector2(x / r2, y / r2)
 
 
 # R(z) = p₁V(z) + p₂S(z) if ||z'|| > dᵣ_ₜₕᵣₑₛ
 #        p₁V(z) - p₂S(z) otherwise
-def region_pf(agent, region, pos, center, vortex_correction, source_correction, d_r_thres):
-    p1Vz = vortex_potential(region, pos) * CENTER_VORTEX * vortex_correction
-    p2Sz = source_potential(region, pos) * CENTER_SOURCE_SINK * source_correction
+def region_pf(region_center, pos, center, scout: PotentialFlowScout, vortex_correction, source_correction, d_r_thres):
+    p1Vz = vortex_potential(region_center, pos) * scout.CENTER_VORTEX * vortex_correction
+    p2Sz = source_potential(region_center, pos) * scout.CENTER_SOURCE_SINK * source_correction
     if center < d_r_thres:
         return p1Vz + p2Sz
     else:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Type, Union, Optional
+from modules.potential_flow.flow_scout import PotentialFlowScout
 
 if TYPE_CHECKING:
     from tasks.task import Task
@@ -13,7 +14,7 @@ from tasks.gather_gas import GatherGas
 from tasks.build import Build
 from tasks.scout import Scout
 from tasks.attack import Attack
-from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID
+from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID, Point2DI
 from modules.extra import exists_producer_for, get_worker_type, has_prerequisites
 from queue import SimpleQueue
 from config import DEBUG_CONSOLE
@@ -204,8 +205,32 @@ class TaskManager:
             py_units = self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.is_combat_unit, Idle)
             for i in range(0, len(py_units)):
                 self.task_queue.add(Attack(pos, ATTACK_PRIO, self.agent))
+    
 
     def scout(self) -> None:
+        # ONLY SCOUTS ONE BASE (ENEMY BASE)
+        enemy_base_pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
+
+        scout_bases = SimpleQueue()
+        scout_bases.put(enemy_base_pos)
+        # Creates a new task and provides a queue of coordinates to visit
+        new_task = PotentialFlowScout(scout_bases, SCOUT_PRIO, self.agent)
+
+        _temp_target_reg = self.agent.base_location_manager.get_next_expansion(PLAYER_SELF).position
+
+        new_task.set_scout_target(Point2DI(_temp_target_reg))
+
+        # here choke point should be used
+
+        # correct_base = min(self.agent.base_location_manager.get_occupied_base_locations(PLAYER_SELF),
+        #                           key=lambda b: b.position.square_distance(unit.position),
+        #                           default=None)
+
+        new_task.set_attract_points(self.agent.regions[0][1]) # should be clossst chokepoint! *
+
+        self.task_queue.add(new_task)
+
+    def scout_old(self) -> None:
         """
         Finds the two closest bases to the enemy's starting location and creates a task to scout these bases and the
         starting base of the opponent.

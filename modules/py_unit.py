@@ -15,7 +15,7 @@ class PyUnit:
     This class contains a library Unit, and extra information.
     """
 
-    def __init__(self, unit: Unit, agent: BasicAgent):
+    def __init__(self, unit: Unit, agent: BasicAgent, last_seen: int = None, fade_time: int = None):
         self.unit: Unit = unit
         self.task: Task = Idle()
         self.groups = set()
@@ -25,7 +25,8 @@ class PyUnit:
 
         self.p_value = unit.unit_type.attack_range
         # time to keep the unit in knowledge base before determined old knowledge
-        self.last_seen = 0
+        self.last_seen = last_seen
+        self.fade_time = fade_time
         # TODO: Add previous known position, in case Unit.position does not work
 
     def __repr__(self):

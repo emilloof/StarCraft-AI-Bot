@@ -4,6 +4,7 @@ from library import Point2DI
 import json
 
 from modules.enemy_debugging import debug_enemies, debug_enemies_text
+from modules.extra import get_neighbours
 from modules.potential_flow.regions import (
     calculate_center,
     get_region,
@@ -104,7 +105,7 @@ def debug_region_borders(agent: BasicAgent) -> None:
         for y in range(agent.map_tools.height):
             for x in range(agent.map_tools.width):
                 if (x, y) not in region[0]:
-                    for neighbour in get_neighbours(agent, x, y).values():
+                    for neighbour in get_neighbours(agent, (x, y)):
                         if neighbour in region[0]:
                             rbmap[neighbour] = color
         color += 1
