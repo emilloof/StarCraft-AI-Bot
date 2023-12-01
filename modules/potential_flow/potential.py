@@ -4,15 +4,8 @@ from typing import TYPE_CHECKING
 from library import PLAYER_ENEMY, Point2D, Point2DI, UNIT_TYPEID, UnitType
 from pygame import Vector2
 from config import TIME_KEEP_ENEMY, TIME_KEEP_ENEMY_BUILDING
-from modules.extra import unit_types_by_condition
-from modules.potential_flow.flows_enum import (
-    BORDER_SOURCE,
-    BORDER_VORTEX,
-    CENTER_SOURCE_SINK,
-    CENTER_VORTEX,
-    DISTANCE_TO_SWITCH_SOURCE_SINK,
-    ENEMY_NEEDLE,
-)
+from modules.extra import get_enemies_in_radius, unit_types_by_condition
+
 from modules.potential_flow.potentials import (
     enemy_pf,
     needle_pval,
@@ -29,6 +22,7 @@ from modules.py_unit import PyUnit
 
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
+    from modules.potential_flow.flow_scout import PotentialFlowScout
 
 
 def update_flows(agent: BasicAgent) -> None:
@@ -40,30 +34,20 @@ def update_flows(agent: BasicAgent) -> None:
         print(f"range: {enemy.unit_type.attack_range}")
 
 
-def get_enemies_in_radius(agent, position: Point2D, radius: int) -> set[PyUnit]:
-    """Returns a list of enemy units within a given radius of a given position."""
-    # units_in_radius = []
+# Start from center of the region and the combine of source and vortex potential flow
+def region_pval(agent: BasicAgent, target_region, scout: PotentialFlowScout, scout_unit: PyUnit) -> Vector2:
+    # Implementation of the regionPVal function
+    center = calculate_center(target_region)
+    base_locations = get_base_locations_in_region(agent, target_region)
+    if base_locations:
+        center = base_locations[0].position
+    cur_reg = get_region(agent, agent.regions, scout_unit.tile_position)
+    cur_reg_center = calculate_center(cur_reg)
+    d2_center = cur_reg_center.square_distance(scout_unit.position)
 
-    return agent.unit_collection.get_group(
-        lambda unit: unit.unit_type.player == PLAYER_ENEMY
-        and position.square_distance(unit.position) <= radius
-    )
+    source_correction = 1 if cur_reg == target_region else 0
+    vortex_correction = 1 if cur_reg == target_region else 0.01 if d2_center < scout.DISTANCE_TO_SWITCH_SOURCE_SINK else 0.01
+    # unsure bout dis ↓
+    scout.DISTANCE_TO_SWITCH_SOURCE_SINK = scout_unit.unit_type.sight_range + 32
 
-    """for enemy in agent.unit_collection.get_group(PLAYER_ENEMY):
-        distance = position.distance(enemy.position)
-        if distance <= radius:
-            units_in_radius.append(enemy)
-
-    return units_in_radius"""
-
-
-def register_enemy_positions(enemies):
-    for enemy in enemies:
-        fade_time = (
-            TIME_KEEP_ENEMY_BUILDING if enemy.unit_type.is_building else TIME_KEEP_ENEMY
-        )
-
-        # TODO: check if enemy is in bunker
-
-        # TODO: update enemy position, in case Unit.position does not work
-
+    return region_pf(cur_reg_center, scout_unit.position, d2_center, scout, vortex_correction, source_correction, scout.DISTANCE_TO_SWITCH_SOURCE_SINK)
