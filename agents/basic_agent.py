@@ -2,14 +2,14 @@ from typing import Union
 import library as pycc
 from modules.build_order import BuildOrder
 # from modules.potential_flow.potential import update_flows
-from modules.potential_flow.regions import parse_regions
+from modules.potential_flow.regions import Region, parse_regions
 from modules.task_manager import TaskManager
 from modules.unit_collection import UnitCollection
 from modules.py_building_placer import PyBuildingPlacer
 from modules import debugging as debug
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_ENEMIES, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
-from modules.extra import unit_types_by_condition
+from modules.extra import parse_json_objects, unit_types_by_condition
 
 
 from icecream import install
@@ -36,7 +36,7 @@ class BasicAgent(pycc.IDABot):
         self.internal_minerals = 0
         self.internal_supply = 0
 
-        self.regions = parse_regions("data/regions.json")
+        self.regions: list[Region] = [Region.from_json(data) for data in parse_json_objects("data/regions.json")] #Region.parse_json("data/regions.json")
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {

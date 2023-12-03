@@ -11,53 +11,44 @@ if TYPE_CHECKING:
 
 
 class Region:
-    def __init__(self, json_string: str):
-        self.tiles, self.mid_point = self.parse_json(json_string)
+    def __init__(self, agent, tiles: set[Point2DI], mid_point: Point2DI):
+        self.agent = agent
+        self.tiles = tiles
+        self.mid_point = mid_point # not used currently
+        self.tiles_as_tuples = set((pos.x, pos.y) for pos in tiles)
+        
 
     def get_tiles(self):
         return self.tiles
+    
+    def get_tiles_as_tuples(self):
+        return self.tiles_as_tuples
 
     def get_center(self):
         return self.mid_point
 
-    @staticmethod
+    def get_region_border(self) -> set[Point2DI]:
+        border = set()
+        for y in range(self.agent.map_tools.height):
+            for x in range(self.agent.map_tools.width):
+                tile = Point2DI(x, y)
+                if tile not in self.tiles: # worked when tested in jupyter
+                    for neighbour in get_neighbours(self.agent, tile):
+                        if neighbour in self.tiles_as_tuples:
+                            border.append(neighbour)
+
+    @classmethod
     # parses a json file to set tile positions and mid point
-    def parse_json(json_string: str) -> (set[Point2DI], Point2DI):
-        data = json.loads(json_string)
-        tiles = set()
-        for tiles in data["tiles"]:
-            tiles.add(Point2DI(tiles["x"], tiles["y"]))
-        center = data["center"]
-        return tiles, center
-
-def parse_regions(file_name: str) -> list[tuple[set[Point2DI], Point2DI]]:  # [(set[(83, 57), ...], (63, 92)), ...]
-    with open(file_name) as json_file:
-        data = json.load(json_file)
-        return [
-            (
-                set(Point2DI(pos["x"], pos["y"]) for pos in region["tiles"]),
-                Point2DI(region["center"]["x"], region["center"]["y"]),
-            )
-            for region in data
-        ]
-
-def regions_as_tuples(regions: list[tuple[set[Point2DI], Point2DI]]) -> list[tuple[set[tuple[int, int]], tuple[int, int]]]:
-    return [region_as_tuple(region) for region in regions]
-
-def region_as_tuple(region: tuple[set[Point2DI], Point2DI]) -> tuple[set[tuple[int, int]], tuple[int, int]]:
-    coordinates = set()
-    print(f"type: {type(region)}")
-    for pos in region[0]:
-        coordinates.add((pos.x, pos.y))
-    return (coordinates, (region[1].x, region[1].y))
-    # return (((pos.x, pos.y) for pos in region[0]), (region[1].x, region[1].y))
+    def parse_json(cls, json_obj: str):
+        return cls(set(Point2DI(pos["x"], pos["y"]) for pos in json_obj["tiles"]), Point2DI(json_obj["center"]["x"], json_obj["center"]["y"]))
     
+
     
-def get_region(agent: BasicAgent, regions: list[tuple[set[Point2DI], Point2DI]], tile: Point2DI) -> tuple[set[Point2DI], Point2DI]:
+def get_region(agent: BasicAgent, regions: list[Region], tile_of_interest: Point2DI) -> Region:
     """Returns the region that the tile is in."""
-    for neighbour_tile in agent.map_tools.get_closest_tiles_to(tile):
+    for tile in [tile_of_interest] + agent.map_tools.get_closest_tiles_to(tile): # idk if [tile_of_interest] is needed
         for region in regions:
-            if neighbour_tile in region[0]:
+            if tile in region[0]:
                 return region
 
 # def get region polygon (borders)
@@ -72,39 +63,10 @@ def get_region_polygon(agent: BasicAgent, regions: list[tuple[set[Point2DI], Poi
 def calculate_center(region: set[tuple[int, int]]) -> tuple[int, int]:
     return _calculate_center(region.as_tuple)"""
 
-def calculate_center(region: Union[tuple[set[Point2DI], Point2DI], tuple[set[tuple], tuple]]) -> Union[Point2D, tuple]:
-    # calculate center of region
-    def _calculate_center(region: set[tuple]) -> tuple:
-        x = 0
-        y = 0
-        for pos in region:
-            x += pos[0]
-            y += pos[1]
-        return (x / len(region), y / len(region))
-
-    if isinstance(region[1], Point2DI):
-        center = tuple(map(int, _calculate_center(region_as_tuple(region)[0]))) # (1.0, 2.0) -> (1, 2)
-        return Point2D(center[0], center[1])
-    elif isinstance(region[1], tuple) == tuple:
-        print("am tuple")
-        return _calculate_center(region)
-    else:
-        raise TypeError("region must be of type set[Point2DI] or set[tuple]")
-
-# GÖR REGION TILL KLASS
-
-def get_region_border(agent: BasicAgent, region) -> list[Point2DI]:
-    border = []
-    for y in range(agent.map_tools.height):
-        for x in range(agent.map_tools.width):
-            if Point2DI(x, y) not in region[0]:
-                for neighbour in get_neighbours(agent, Point2DI(x, y)):
-                    print(f"neighbour: {neighbour}")
-                    if neighbour in region[0]:
-                        print("have neighbour")
-                        border.append(neighbour)
-
-# get border perimeter
+def calculate_center(region: Region) -> Point2D:
+    x = sum(pos.x for pos in region.tiles)
+    y = sum(pos.y for pos in region.tiles)
+    return Point2D(x / len(region.tiles), y / len(region.tiles))
 
  
 # get base locations in region

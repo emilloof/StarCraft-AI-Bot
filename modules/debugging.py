@@ -9,7 +9,7 @@ from modules.potential_flow.regions import (
     calculate_center,
     get_region,
     parse_regions,
-    regions_as_tuples,
+    Region.get_tiles_as_tuples,
     regions_debug,
 )
 
@@ -55,7 +55,7 @@ def mother_debugger(agent: BasicAgent) -> None:
 
 
 def debug_regions(agent: BasicAgent) -> None:
-    regions = regions_as_tuples(agent.regions)
+    regions = Region.get_tiles_as_tuples(agent.regions)
     rmap = regions_debug(regions)
     for region in regions:
         center = calculate_center(region[0])
@@ -98,7 +98,7 @@ def debug_regions_old(agent: BasicAgent) -> None:
 
 
 def debug_region_borders(agent: BasicAgent) -> None:
-    regions = regions_as_tuples(agent.regions)
+    regions = Region.get_tiles_as_tuples(agent.regions)
     rbmap = dict()
     color = 1
     for region in regions:

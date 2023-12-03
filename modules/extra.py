@@ -19,6 +19,7 @@ BaseLocation.__repr__ - overrides how a base location is represented.
 Color.__floordiv__ - overrides floor division (divides RGB-color with int).
 """
 from __future__ import annotations
+import json
 from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
@@ -29,6 +30,28 @@ from tasks import build
 from tasks import train
 from library import UnitType, TypeData, PLAYER_SELF, Point2D, UPGRADE_ID, Point2DI, UNIT_TYPEID, Color, \
     BaseLocation, Race, PLAYER_ENEMY
+
+def tuple_fromto_tile(func):
+    def wrapper(*args):
+        if any(isinstance(arg, tuple) for arg in args):
+            return func(*args)
+        
+        # If Point2DI do special handling
+        args = (arg.as_tuple() if isinstance(arg, Point2DI) else arg for arg in args)
+        result = func(*args)
+        if isinstance(result, set):
+            return {Point2DI(*arg) for arg in result}
+        if isinstance(result, list):
+            return [Point2DI(*arg) for arg in result]
+        if isinstance(result, tuple):
+            return Point2DI(*result)
+    return wrapper
+
+
+def parse_json_objects(file_name: str) -> list:
+    with open(file_name) as json_file:
+        data = json.load(json_file)
+        return data
 
 
 def get_addon(agent: BasicAgent, candidate: PyUnit) -> Optional[PyUnit]:
@@ -146,25 +169,17 @@ def unit_types_by_condition(agent: BasicAgent, condition: callable) -> set[UNIT_
     return {unit_typeid for unit_typeid in vars(UNIT_TYPEID).values() if
             isinstance(unit_typeid, UNIT_TYPEID) and condition(UnitType(unit_typeid, agent))}
 
-def get_neighbours(agent: BasicAgent, pos: Union[tuple, Point2DI]) -> list[Union[tuple, Point2DI]]:
-    if type(pos) == Point2DI:
-        print("is pointdi")
-        ret_val = _get_neighbours(agent, pos.as_tuple(), lambda x, y: Point2DI(x, y))
-        ic(ret_val)
-        return ret_val
-    else: # if type(pos) == tuple
-        return _get_neighbours(agent, pos, lambda x, y: (x, y))
 
-def _get_neighbours(
-    agent: BasicAgent, pos: tuple, return_type: callable
-) -> list[Union[tuple, Point2DI]]:
-    x, y = pos
-    return [
-        return_type(x - 1, y) if x > 0 else None, # left
-        return_type(x + 1, y) if x < agent.map_tools.width - 1 else None, # right
-        return_type(x, y - 1) if y > 0 else None, # up
-        return_type(x, y + 1) if y < agent.map_tools.height - 1 else None # down
-    ]
+@tuple_fromto_tile
+def get_neighbours(agent: BasicAgent, pos) -> list[Point2DI]:
+        x, y = pos
+        return [
+            (x - 1, y) if x > 0 else None, # left
+            (x + 1, y) if x < agent.map_tools.width - 1 else None, # right
+            (x, y - 1) if y > 0 else None, # up
+            (x, y + 1) if y < agent.map_tools.height - 1 else None # down
+        ]
+
 
 
 def get_enemies_in_radius(agent, position: Point2D, radius: int) -> set[PyUnit]:
@@ -182,6 +197,7 @@ def get_enemies_in_radius(agent, position: Point2D, radius: int) -> set[PyUnit]:
             units_in_radius.append(enemy)
 
     return units_in_radius"""
+
 
 # Wrapper function
 def point2d_to_tuple(func):
