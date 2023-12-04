@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from library import UnitType, Point2D
 from tasks.task import Task, Status
 from queue import SimpleQueue
-
+import dlite
 
 class Scout(Task):
     """Task for scouting a list of bases."""
@@ -20,6 +20,11 @@ class Scout(Task):
         self.scout_target: Optional[Point2D] = None
         self.fails: int = 0
         self.previous_pos: Optional[Point2D] = None
+        
+        #added. - hanlu520
+        self.agent = agent
+        
+        
         # "Thus, what is of supreme importance in war is to attack the enemy's strategy", Sun Tzu, The Art of War.
 
     def on_start(self, py_unit: PyUnit) -> Status:
@@ -34,7 +39,11 @@ class Scout(Task):
 
         #  If it has a target the task is restarted
         if self.target:
-            py_unit.move(self.target)
+
+            #py_unit.move(self.target)
+            start_tile = (int(round(py_unit.position.x)), int(round(py_unit.position.y))) 
+            target_tile = (int(round(self.target.x)), int(round(self.target.y)))
+            dlite.dLiteMain(self.agent, start_tile, target_tile)
             return Status.DONE
 
         # Sets first target, then removes it from list
@@ -42,7 +51,10 @@ class Scout(Task):
 
         # From start only support for worker scouting.
         if self.unit_type in self.candidates:
-            py_unit.move(self.target)
+            #py_unit.move(self.target)
+            start_tile = (int(round(py_unit.position.x)), int(round(py_unit.position.y))) 
+            target_tile = (int(round(self.target.x)), int(round(self.target.y)))
+            dlite.dLiteMain(self.agent, start_tile, target_tile)
         # Features for other units could be added.
         else:
             return Status.FAIL
@@ -91,5 +103,9 @@ class Scout(Task):
         else:
             # Switching target to next coordinates in list to scout.
             self.target = self.scout_bases.get()
-            py_unit.move(self.target)
+            #py_unit.move(self.target)
+            start_tile = (int(round(py_unit.position.x)), int(round(py_unit.position.y))) 
+            target_tile = (int(round(self.target.x)), int(round(self.target.y)))
+            dlite.dLiteMain(self.agent, start_tile, target_tile)
+            
             return Status.NOT_DONE

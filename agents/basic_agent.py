@@ -5,6 +5,11 @@ from modules.task_manager import TaskManager
 from modules.unit_collection import UnitCollection
 from modules.py_building_placer import PyBuildingPlacer
 from modules import debugging as debug
+
+#For pathfinding - hanlu520
+import vertex
+from library import Point2DI
+
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
 from modules.extra import unit_types_by_condition
@@ -30,6 +35,9 @@ class BasicAgent(pycc.IDABot):
         self.internal_minerals = 0
         self.internal_supply = 0
 
+        #init for pathfinding - hanlu520
+        self.vertex_dict = {}
+
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
             pycc.UNIT_TYPEID.TERRAN_ORBITALCOMMAND: (150, 0),
@@ -53,6 +61,14 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
+       
+       # Safe-path init for vertex with all neccessary vertex data
+        for y in range(self.map_tools.height):
+            for x in range(self.map_tools.width):
+                if(self.map_tools.is_walkable(x, y)):
+                    current_point = (x, y)
+                    self.vertex_dict[current_point] = (vertex.Vertex(current_point))
+
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
