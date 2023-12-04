@@ -4,7 +4,7 @@ from vertex import Vertex
 from custom_priority_queue import CustomPriorityQueue
 import copy
 import math
-from tasks import move
+
 
 #Function for calculatoing heuristic. In this case using the Manhattan distance.
 def calculateHeuristic(first_vertex : Vertex, second_vertex: Vertex):
@@ -29,7 +29,7 @@ def updateVertex(priority_queue : CustomPriorityQueue, vertexes : dict, current_
         priority_queue.get(vertexes[current_point])
     if(vertexes[current_point].g_value != vertexes[current_point].rhs_value):
        
-        priority_queue.put((calculateKey(vertexes, vertexes[start_point], vertexes[current_point], key_m), vertexes[current_point]))
+        priority_queue.put((calculateKey(vertexes, start_point, current_point, key_m), current_point))
        
 
 def computeShortestPath(priority_queue : CustomPriorityQueue, vertexes : dict, start_point : (int, int), target_point : (int, int), key_m):
@@ -38,7 +38,7 @@ def computeShortestPath(priority_queue : CustomPriorityQueue, vertexes : dict, s
     top_point = top_element[1]
     
    
-    priority_queue.put((calculateKey(vertexes, target_point, start_point, key_m), vertexes[top_point]))
+    priority_queue.put((calculateKey(vertexes, target_point, start_point, key_m), top_point))
   
 
     while(top_key < calculateKey(vertexes, start_point, start_point, 0) or start_point.rhs_value != start_point.g_value):

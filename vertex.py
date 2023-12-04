@@ -1,9 +1,9 @@
 import math
 
 
+
 class Vertex():
     def __init__(self, position : (int, int), parent=None, rhs_value=math.inf, g_value=math.inf, neighbour_list=None) -> None:
-        #super.__init__(position.x, position.y)
         self.parent = parent
         self.position = position
         self.position_x = position[0]
@@ -19,15 +19,16 @@ class Vertex():
         return [self.parent] + self.parent.build_path()
 
     def neighbours(self):
+        #from agents.basic_agent import BasicAgent
+       # agent = BasicAgent()
         for x_cord in range(self.position_x - 1, self.position_x + 2):
             for y_cord in range(self.position_y - 1, self.position_y + 2):
-                if(x_cord != self.position_x and y_cord != self.position_y):
+                if((x_cord != self.position_x and y_cord != self.position_y)):# and agent.map_tools.is_walkable(x_cord, y_cord)):
                     current_neighbour = (x_cord, y_cord)
                     self.neighbour_list.append(current_neighbour)
         return self.neighbour_list
     
 
-    #behöver jag denna?
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):
             return self.position_x == other.position_x and self.position_y == other.position_y
