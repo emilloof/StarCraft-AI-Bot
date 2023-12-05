@@ -119,7 +119,7 @@ class BasicAgent(pycc.IDABot):
         # Only run the strategy decider every 100 tick
         # 675 tick equals roughly 30 sec 
         if self.time % 100 == 0:
-            print("time: ", self.time)
+            #print("time: ", self.time)
         
             self.curr_strategy, self.hp_tracker, self.last_hp_diff = self.strategy.choose_strategy(self,
                                                                                 self.strategy,
