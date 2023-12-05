@@ -29,8 +29,9 @@ def get_gates(agent: BasicAgent) -> list:
     for gate_pair in gates:
         if len(gate_pair) > 1:
             bottleneck = set_path(agent, gate_pair)
-            if len(bottleneck) < 13:
+            if len(bottleneck) < 13: # Bottlenecks longer than 12 are too long
                 complete_gates.append(bottleneck)
+
     return complete_gates
 
 
@@ -152,21 +153,21 @@ def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> list:
 
 
 def get_curr_tiles_to_label(agent: BasicAgent, recently_labelled_tiles: dict, labelled_tiles: dict, tiles_to_label: list) -> list:
-    # fixa så att man tar bort från recently efter hand
-    if len(recently_labelled_tiles) == 0:
+    """ Returns a list of tiles that should be labelled next at a certain depth """
+    if not recently_labelled_tiles:
         return tiles_to_label
     
     curr_tiles_to_label = []
     tiles_to_remove = list(recently_labelled_tiles.keys())
+
     for tile in tiles_to_remove:
         neighbours = get_neighbours(agent, 1, tile)
         for neighbour in neighbours:
-            if agent.map_tools.is_walkable(neighbour):
-                if not neighbour in labelled_tiles:
-                    if not neighbour in curr_tiles_to_label:
+            if agent.map_tools.is_walkable(neighbour): 
+                if neighbour not in labelled_tiles:
+                    if neighbour not in curr_tiles_to_label:
                         if neighbour in tiles_to_label:
                             curr_tiles_to_label.append(neighbour)
-        #recently_labelled_tiles.pop(tile)
     
     return curr_tiles_to_label
 

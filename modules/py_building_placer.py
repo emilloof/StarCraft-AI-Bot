@@ -8,7 +8,9 @@ from modules.py_unit import PyUnit
 from typing import Optional
 from tasks import build
 
-
+# FRÅGA  om funktion i basic agent
+# Fråga om hur man hämtar ut en unit_typeid och varför det blir samma för BARRACKS och SUPPLYDEPOTS
+# jag får ut en tile jag vill bygga på som är korrekt och som går. Men den tilen står inte som bebyggd efter detta
 class PyBuildingPlacer:
     """Class of tools that help placement of buildings"""
     def __init__(self, agent: BasicAgent):
@@ -20,15 +22,18 @@ class PyBuildingPlacer:
         :param type_to_build:
         :return:
         """
+        print("NEW BUILDING")
+        print(type_to_build.name)
+       
         # If it is a refinery it needs to be build on top of a geyser
         if type_to_build.is_refinery:
             pos = self.find_refinery_position()
         # If a new Town hall is to be built, we want it at the next expansion position
         elif type_to_build.is_resource_depot:
             pos = self.agent.base_location_manager.get_next_expansion(PLAYER_SELF).depot_position
-        #elif type_to_build == (UnitType.TERRAN_BARRACKS or UnitType.TERRAN_FACTORY): # Lägg till alla typer av Barracks och factories
-        #    pos = self.find_walloff_position()
-        
+       
+        elif type_to_build.name == 'TERRAN_SUPPLYDEPOT': # Lägg till alla typer av Barracks och supplies
+            pos = self.find_walloff_position(type_to_build)
         else:
             pos = self.agent.building_placer.get_build_location_near(
                 self.agent.base_location_manager.get_player_starting_base_location(PLAYER_SELF).depot_position,
@@ -53,9 +58,37 @@ class PyBuildingPlacer:
                     return self.agent.unit_collection.get_py_unit(geyser.id)
         return None
     
-    def find_walloff_position(self) -> Optional[PyUnit]:
+    def find_walloff_position(self, type_to_build: UnitType) -> Point2DI:   # Gjord av ERIk
         """ Finds a location on a bottlenecks starting at the ones closest to the home base """
-        # How to get bottlenecks from basic agent, self.agent.BOTTLENECKS
+        print("IT IS WALLOFF")
+        # All barracks
+        """barracks = [bar.tile_position for bar in 
+                    self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.unit_typeid.TERRAN_BARRACKS)]"""
+        #print("BARRACKS", barracks)
+        # All supply depots
+        supply_depots = [sup.tile_position for sup in 
+                    self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.unit_typeid.TERRAN_SUPPLYDEPOT)]
+        print("SUPPLIES", supply_depots)
+
+        """upcoming_barracks = [t.pos for t in
+                    self.agent.task_manager.current_tasks.get_tasks(build.Build, None).union(
+                        self.agent.task_manager.task_queue.get_tasks(build.Build, None)) if
+                    t.building_type.name == 'TERRAN_BARRACKS' and t.pos]"""
+        #print("UPCOMING BARRACKS", upcoming_barracks)
+        upcoming_supply_depots = [t.pos for t in
+                    self.agent.task_manager.current_tasks.get_tasks(build.Build, None).union(
+                        self.agent.task_manager.task_queue.get_tasks(build.Build, None)) if
+                    t.building_type.unit_typeid.TERRAN_SUPPLYDEPOT and t.pos]
+        print("UPCOMING SUPPLY DEPOTS", upcoming_supply_depots)
+        for bottleneck in self.agent.BOTTLENECKS:
+            for tile in bottleneck:
+                print("TILE TO CHECK IF OCCUPIED", tile)
+                if tile not in supply_depots + upcoming_supply_depots:
+                    print("IT WAS NOT OCCUPIED", tile)
+                    return tile
+                print("IT WAS OCCUPIED", tile)
+            print("THE BOTTLENECK IS FULL")
+        return None
 
     def can_build_addon(self, candidate: PyUnit) -> bool:
         """
@@ -88,7 +121,11 @@ class PyBuildingPlacer:
                 # Recalculate next expansion position
                 pos = self.agent.base_location_manager.get_next_expansion(PLAYER_SELF).depot_position
                 return True, pos
-
+            if building_type.name == 'TERRAN_SUPPLYDEPOT':  # ERIK added
+                print("IN FIX")
+                pos = self.agent.building_placer.get_build_location_near(pos, building_type, 0)
+                print("FIXED POS", pos)
+                return True, pos
             # Find new build location near old build location
             pos = self.agent.building_placer.get_build_location_near(pos, building_type)
             if pos == Point2DI(0, 0):

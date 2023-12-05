@@ -8,8 +8,10 @@ from modules import debugging as debug
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH
 from modules.extra import unit_types_by_condition
-import bottlenecks as bottle    # Implementerad av Erik
+import bottlenecks as bottle    # Erik
 import math # ERIk
+from library import Point2DI
+
 if DEBUG_VISUAL:
     from visualdebugger.heat_map_debugger import HeatMapDebugger
 
@@ -54,33 +56,9 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
-        #print(self.build_order) # ERIk
-        self.BOTTLENECKS = bottle.get_gates(self)   # Hämta alla flaskhalsar
-
-        representants = []
-        for i in range(len(self.BOTTLENECKS)):
-            representant = self.BOTTLENECKS[i]
-            representants.append([representant[0], i])
-        #self.BOTTLENECKS = []
+       
+        self.BOTTLENECKS = self.sort_bottlenecks()  # ERIk
         
-        #print(self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF)) # The starting pos of our player
-        base_loc = self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF).position
-
-        list_of_dist = []
-        for rep in representants:
-            dist_from_base = math.sqrt((base_loc.x - rep[0].x)**2 + (base_loc.y - rep[0].y)**2)
-            list_of_dist.append([dist_from_base, rep[1]])
-
-        closest_list = sorted(list_of_dist, key=lambda x: x[0])
-
-        nearest_bottles = []
-        for closest in closest_list:
-            nearest_bottles.append(self.BOTTLENECKS[closest[1]])
-
-        for bott in nearest_bottles:
-            print(bott)
-            print("\n")
-
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
@@ -92,6 +70,11 @@ class BasicAgent(pycc.IDABot):
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
         pycc.IDABot.on_step(self)
+
+        for bottle in self.BOTTLENECKS:
+            for tile in bottle:
+                self.map_tools.draw_tile(tile, pycc.Color.BLUE)
+
 
         if self.current_frame % FRAME_SKIP == 1:
             if DEBUG_LOGS:
@@ -162,3 +145,28 @@ class BasicAgent(pycc.IDABot):
         if isinstance(unit_type, pycc.UnitType) and unit_type.unit_typeid in self.UPGRADES:
             minerals, gas = self.UPGRADES[unit_type.unit_typeid]
         return minerals, gas, supply
+    
+    def sort_bottlenecks(self) -> list[list]:
+        """ Fetches bottlenecks and sorts them by closest to startbase position of agent """
+        bottlenecks = bottle.get_gates(self) # Hämta alla flaskhalsar
+
+        # Get one tile from each bottleneck
+        selected_tiles = [bottleneck[0] for bottleneck in bottlenecks]
+        
+        # Get the distance to each bottleneck and its list index
+        distances = [ 
+            (self.get_dist_to_start(tile), i)
+            for i, tile in enumerate(selected_tiles) 
+        ]
+        # Sort the list by distance, where the closest one is first
+        sorted_distances = sorted(distances, key=lambda x: x[0])
+
+        # Add the bottleneck to nearest by its list index
+        nearest_bottles = [bottlenecks[i] for _, i in sorted_distances]
+
+        return nearest_bottles
+    
+    def get_dist_to_start(self, tile: Point2DI) -> list:
+        """ Returns a distance from a tile to the starting base position """
+        base_loc = self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF).position
+        return math.sqrt((base_loc.x - tile.x)**2 + (base_loc.y - tile.y)**2)
