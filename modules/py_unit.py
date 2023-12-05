@@ -68,3 +68,7 @@ class PyUnit:
     def remove_group(self, key: Any) -> None:
         """Removes a group from unit's groups"""
         self.groups.remove(key)
+
+    def get_hp(self):
+        unit_hp = self.unit.hit_points
+        return unit_hp
