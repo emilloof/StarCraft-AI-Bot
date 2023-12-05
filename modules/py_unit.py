@@ -22,7 +22,7 @@ class PyUnit:
         self.agent: BasicAgent = agent
         self.max_weapon_cooldown = 0
         self._last_weapon_cooldown = 0
-       
+        self.hp = unit.hit_points
 
     def __repr__(self):
         return f"<PyUnit: {self.unit_type.name}, {self.id}>"
