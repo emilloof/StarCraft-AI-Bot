@@ -46,6 +46,7 @@ class BasicAgent(pycc.IDABot):
         self.bayes_model = self.strategy.create_bayes_model(self)
         self.curr_strategy = ''
         self.time = 0
+        self.last_hp_diff = 0
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
@@ -73,7 +74,7 @@ class BasicAgent(pycc.IDABot):
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
-        map = bottle.get_list_of_bottlenecks(self)
+        #map = bottle.get_list_of_bottlenecks(self)
         #bottle.get_offset_coords(Point2DI(2, 2), 2)
 
         if DEBUG_VISUAL:
@@ -83,11 +84,6 @@ class BasicAgent(pycc.IDABot):
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
         
-<<<<<<< agents/basic_agent.py
-
-        
-=======
->>>>>>> agents/basic_agent.py
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
@@ -121,17 +117,21 @@ class BasicAgent(pycc.IDABot):
         # David
         self.time += 1
         # Only run the strategy decider every 100 tick
+        # 675 tick equals roughly 30 sec 
         if self.time % 100 == 0:
             print("time: ", self.time)
-            self.curr_strategy, self.hp_tracker = self.strategy.choose_strategy(self,
+        
+            self.curr_strategy, self.hp_tracker, self.last_hp_diff = self.strategy.choose_strategy(self,
                                                                                 self.strategy,
                                                                                 self.bayes_model, 
                                                                                 self.hp_tracker, 
                                                                                 self.strategy.get_hit_points(self), 
-                                                                                self.internal_minerals)
+                                                                                self.internal_minerals, 
+                                                                                self.time,
+                                                                                self.last_hp_diff)
             
             print("best strat: ", self.curr_strategy)
-        #exit()
+            #exit()
 
         if DEBUG_UNIT:
             debug.debug_units(self)
