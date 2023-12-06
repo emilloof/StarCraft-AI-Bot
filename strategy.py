@@ -1,6 +1,6 @@
 from modules.unit_collection import UnitCollection
 from modules.py_unit import PyUnit
-from library import PLAYER_SELF, PLAYER_ENEMY, PLAYER_NEUTRAL, UNIT_TYPEID, Unit
+from library import PLAYER_SELF, PLAYER_ENEMY, PLAYER_NEUTRAL, UNIT_TYPEID, Unit, TechTree, UnitType, UPGRADE_ID
 from pgmpy.models import  BayesianNetwork
 from pgmpy.factors.discrete import TabularCPD
 from pgmpy.inference import VariableElimination
@@ -19,10 +19,16 @@ STRUCTURES = ['TERRAN_ARMORY', 'TERRAN_BARRACKS', 'TERRAN_BUNKER', 'TERRAN_COMMA
 # Least amount of offensive unit we want to have to choose an offensive strategy
 LIMIT_OFF_UNITS = 25
 
+# Upgrades for different strategys
+UPGRADES = {'Offensive': [UPGRADE_ID.MARINESTIMPACK, UPGRADE_ID.REAPERSTIMPACK, UPGRADE_ID.COMBATSHIELD, UPGRADE_ID.SIEGETECH, UPGRADE_ID.MULE],
+            'Defensive': [UPGRADE_ID.TERRANBUILDINGARMOR, UPGRADE_ID.TERRANINFANTRYARMORSLEVEL1, UPGRADE_ID.TERRANINFANTRYARMORSLEVEL2, UPGRADE_ID.TERRANINFANTRYARMORSLEVEL3,
+                          UPGRADE_ID.TERRANINFANTRYWEAPONSLEVEL1, UPGRADE_ID.TERRANINFANTRYWEAPONSLEVEL2, UPGRADE_ID.TERRANINFANTRYWEAPONSLEVEL3, UPGRADE_ID.MULE],
+            'Expansive': [UPGRADE_ID.MULE, UPGRADE_ID.TERRANBUILDINGARMOR]}
+
 # Define what units and structures a certain strategy should produce
-STRATEGYS = {'Offensive': {'TERRAN_MARINE': 8, 'TERRAN_REAPER': 5, 'TERRAN_HELLION': 2},
-             "Defensive": {'TERRAN_SIEGETANK': 2, 'TERRAN_HELLION': 2, 'TERRAN_WIDOWMINE': 2, 'TERRAN_CYCLONE': 2},
-             'Expansive': {'TERRAN_COMMANDCENTER': 1, 'TERRAN_SUPPLYDEPOT': 1, 'TERRAN_BARRACKS': 1, 'TERRAN_FACTORY': 1}}
+STRATEGYS = {'Offensive': {'TERRAN_MARINE': 8, 'TERRAN_REAPER': 5, 'TERRAN_HELLION': 2, 'upgrades': UPGRADES['Offensive']},
+             "Defensive": {'TERRAN_SIEGETANK': 2, 'TERRAN_HELLION': 2, 'TERRAN_WIDOWMINE': 2, 'TERRAN_CYCLONE': 2, 'TERRAN_BUNKER': 2, 'TERRAN_SENSORTOWER': 1, 'upgrades': UPGRADES['Defensive']},
+             'Expansive': {'TERRAN_COMMANDCENTER': 1, 'TERRAN_SUPPLYDEPOT': 1, 'TERRAN_BARRACKS': 1, 'TERRAN_FACTORY': 1,'TERRAN_SENSORTOWER': 1, 'upgrades': UPGRADES['Expansive']}}
 
 class Strategy:
     
@@ -137,7 +143,8 @@ class Strategy:
              enemy_attack_last_675_tick = 1
         many_minerals = strategy.many_minerals(self, minerals)
 
-        #over_25_off_units = strategy.is_over_25_off_units(self)
+        over_25_off_units = strategy.is_over_25_off_units(self)
+        
         
         #check_minerals = lambda miner, x: 1 if miner > x else 0
         #over_400_minerals = check_minerals(minerals, 400)
@@ -152,9 +159,10 @@ class Strategy:
         prob_exp = inference.query(variables=["Expansive"], evidence=evidence)
         prob_off = inference.query(variables=["Offensive"], evidence=evidence)
         prob_def =  inference.query(variables=["Defensive"], evidence=evidence)
+        best_strat = strategy.decide_strat([prob_exp, prob_off, prob_def]) 
 
 
-        return strategy.decide_strat([prob_exp, prob_off, prob_def]), updated_hp_tracker, last_hp_diff
+        return STRATEGYS[best_strat], best_strat, updated_hp_tracker, last_hp_diff
     
     def decide_strat(strats: list) -> dict:
         """ Takes in arguments as probabilities for a certain strategy and returns the best based on the probs"""
@@ -162,7 +170,7 @@ class Strategy:
         # best_strat[1] is the value given from the bayes network
         best_strat = ['', 0]
         for strat in strats:
-            #print(strat.variables[0], " ", strat.values[1])
+            print(strat.variables[0], " ", strat.values[1])
             if strat.values[1] > best_strat[1]:
                 best_strat[0] = strat.variables[0]
                 # Truth value
@@ -170,7 +178,7 @@ class Strategy:
             elif strat.values[1] == best_strat[1]:
                  best_strat[0] += strat.variables[0]
 
-        return STRATEGYS[best_strat[0]]
+        return best_strat[0]
 
          
     
@@ -201,7 +209,11 @@ class Strategy:
         """ Returns 1 if we have over 25 offensive units, else 0 """
         units = 0
         for pyunit in self.unit_collection.get_group(PLAYER_SELF):
+            #print(pyunit.unit_type.unit_typeid)
+            #exit()
             if pyunit.unit_type.name in OFFENSIVE_UNITS:
+                print(pyunit.unit_type.unit_typeid)
+                print(UPGRADE_ID.MARINESTIMPACK)
                 units += 1
         if units > 25:
             return 1
