@@ -10,7 +10,7 @@ from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UN
 from modules.extra import unit_types_by_condition
 import bottlenecks as bottle    # Erik
 import math # ERIk
-from library import Point2DI
+from library import Point2DI, UNIT_TYPEID, ABILITY_ID, Unit
 
 if DEBUG_VISUAL:
     from visualdebugger.heat_map_debugger import HeatMapDebugger
@@ -57,7 +57,8 @@ class BasicAgent(pycc.IDABot):
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
        
-        self.BOTTLENECKS = self.sort_bottlenecks()  # ERIk
+        start_base_pos = self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF).position
+        self.BOTTLENECKS = bottle.get_bottlenecks(self, start_base_pos)  # ERIk
         
         if DEBUG_VISUAL:
             self.set_up_debugging()
@@ -71,9 +72,20 @@ class BasicAgent(pycc.IDABot):
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
         pycc.IDABot.on_step(self)
 
-        for bottle in self.BOTTLENECKS:
-            for tile in bottle:
+        for bott in self.BOTTLENECKS: # ERIK
+            for tile in bott:
                 self.map_tools.draw_tile(tile, pycc.Color.BLUE)
+
+        return_set = set(self.unit_collection.py_units.values())
+        all_supply_depots = {py_unit for py_unit in return_set if py_unit.unit_type.unit_typeid == UNIT_TYPEID.TERRAN_SUPPLYDEPOT}
+        all_firendly_units = {py_unit for py_unit in return_set if py_unit.unit_type.is_worker}
+        for supply_depot in all_supply_depots:
+            # Juat lowers all at the moment
+            supply_depot.ability(ABILITY_ID.MORPH_SUPPLYDEPOT_RAISE)
+            is_worker_nearby = any(bottle.distance_between_tiles(supply_depot.tile_position, unit.tile_position) < 2 
+                                   for unit in all_firendly_units)
+            if is_worker_nearby:
+                supply_depot.ability(ABILITY_ID.MORPH_SUPPLYDEPOT_LOWER)
 
 
         if self.current_frame % FRAME_SKIP == 1:
@@ -145,28 +157,3 @@ class BasicAgent(pycc.IDABot):
         if isinstance(unit_type, pycc.UnitType) and unit_type.unit_typeid in self.UPGRADES:
             minerals, gas = self.UPGRADES[unit_type.unit_typeid]
         return minerals, gas, supply
-    
-    def sort_bottlenecks(self) -> list[list]:
-        """ Fetches bottlenecks and sorts them by closest to startbase position of agent """
-        bottlenecks = bottle.get_gates(self) # Hämta alla flaskhalsar
-
-        # Get one tile from each bottleneck
-        selected_tiles = [bottleneck[0] for bottleneck in bottlenecks]
-        
-        # Get the distance to each bottleneck and its list index
-        distances = [ 
-            (self.get_dist_to_start(tile), i)
-            for i, tile in enumerate(selected_tiles) 
-        ]
-        # Sort the list by distance, where the closest one is first
-        sorted_distances = sorted(distances, key=lambda x: x[0])
-
-        # Add the bottleneck to nearest by its list index
-        nearest_bottles = [bottlenecks[i] for _, i in sorted_distances]
-
-        return nearest_bottles
-    
-    def get_dist_to_start(self, tile: Point2DI) -> list:
-        """ Returns a distance from a tile to the starting base position """
-        base_loc = self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF).position
-        return math.sqrt((base_loc.x - tile.x)**2 + (base_loc.y - tile.y)**2)

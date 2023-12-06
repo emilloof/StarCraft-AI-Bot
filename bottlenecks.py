@@ -5,55 +5,44 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from library import Point2DI, Point2D
 import math
-from collections import deque
 
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
-from library import PLAYER_SELF, PLAYER_NEUTRAL
+def get_bottlenecks(agent: BasicAgent, start_base_pos: Point2DI) -> list[list]:
+    """ Beskrivning """
+ 
+    gate_pairs = generate_bottleneck_bounds(agent)
 
-def get_bottle_map(agent: BasicAgent) -> dict:
-    """ Used for debugging """
-    map = get_list_of_bottlenecks(agent)
-    return map
-
-
-def get_gates(agent: BasicAgent) -> list:
-
-    map = get_list_of_bottlenecks(agent)
-    gates = set_gate_tiles(agent, map)
-    gates = update_gate_clusters(agent, gates)
-    gates = build_gates(agent, gates)
-
-    complete_gates = []
-    for gate_pair in gates:
+    complete_bottlenecks = []
+    for gate_pair in gate_pairs:
         if len(gate_pair) > 1:
-            bottleneck = set_path(agent, gate_pair)
+            bottleneck = build_gate(agent, gate_pair) #
             if len(bottleneck) < 13: # Bottlenecks longer than 12 are too long
-                complete_gates.append(bottleneck)
+                complete_bottlenecks.append(bottleneck)
 
-    return complete_gates
+    return sort_bottlenecks(agent, complete_bottlenecks, start_base_pos)
 
 
-def get_list_of_bottlenecks(agent: BasicAgent) -> dict:
+def set_tile_depths(agent: BasicAgent) -> dict:
     """ Returns a dict where each depth has associated tiles """
     last_found_depth = 1   
-    depth_map = {}  # Map of depths and their associated tiles
+    depths = {}  # Map of depths and their associated tiles
 
     for y in range(agent.map_tools.height):
         for x in range(agent.map_tools.width):
             tile = Point2DI(x, y)
             if agent.map_tools.is_walkable(tile):
-                depth_map[tile] = 0
+                depths[tile] = 0
                 depth = get_depth_of_tile(agent, tile, last_found_depth)
-                if not depth in depth_map:    # Check if the depth has been found before
-                    depth_map[depth] = []
-                depth_map[depth].append(tile)
+                if not depth in depths:    # Check if the depth has been found before
+                    depths[depth] = []
+                depths[depth].append(tile)
                 last_found_depth = depth   # Update last found depth 
 
-    return depth_map
+    return depths
 
-def get_depth_of_tile(agent: BasicAgent, tile: Point2DI, last_found_depth: int) -> None:
+def get_depth_of_tile(agent: BasicAgent, tile: Point2DI, last_found_depth: int) -> int:
     """ Returns the distance between a walkable tile and its closest wall tile """
     """current_depth = last_found_depth - 1
     depth = 0
@@ -86,49 +75,20 @@ def get_depth_of_tile(agent: BasicAgent, tile: Point2DI, last_found_depth: int) 
 
 
 
-def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> list:
-    
-    """curr_water_level = len(depth_map) 
-    labelled_tiles = {}     
-    gate_clusters = []         
-    current_label = 1
-    region_pairs = []
-    tiles = []
-    while curr_water_level >= 11:
-        listf = depth_map.get(curr_water_level, [])
-        sorted_list = sorted(listf, key=lambda point: point.x)
-        print("NEW DEPTH")
-        for tile in sorted_list:
-            print(tile)
-            neighbours = get_labelled_neighbours(agent, labelled_tiles, tile)
-            
-            if len(neighbours) > 0:
-                values = list(neighbours.values())
-                if len(set(values)) > 1: # Does the neighbours have different labels?
-                    add_tile_to_gate_cluster(neighbours, tile, gate_clusters, region_pairs)
-                    print("TILEGATES", tile)
-                    tiles.append(tile)
-                labelled_tiles[tile] = values[0] # Give tile same label as any neighbour or the only neighbour
-            else:
-                # Give tiles without labelled neigbours a unique label
-                labelled_tiles[tile] = current_label
-                current_label += 1
-        curr_water_level -= 1
+def set_gate_clusters(agent: BasicAgent) -> list[set]:
+    """ Beskrivning """
 
-    return tiles #gate_clusters """
-
-    curr_water_level = len(depth_map)  
+    depths = set_tile_depths(agent)
+    curr_water_level = len(depths)  
     labelled_tiles = {}
     recently_labelled_tiles = {}
     gate_clusters = []         
     current_label = 1
     region_pairs = []
-
-    depth_map_copy = depth_map.copy()
-    test_list = {}
+    depths_copy = depths.copy()
     
     while curr_water_level >= 0:
-        tiles_to_label = depth_map_copy.get(curr_water_level, [])   # Tiles at that level
+        tiles_to_label = depths_copy.get(curr_water_level, [])   # Tiles at that level
         sorted_list = sorted(tiles_to_label, key=lambda point: (point.x, point.y))
         while sorted_list:
             curr_tiles_to_label = get_curr_tiles_to_label(agent, recently_labelled_tiles, labelled_tiles, sorted_list)
@@ -149,7 +109,7 @@ def set_gate_tiles(agent: BasicAgent, depth_map: dict) -> list:
                 sorted_list.remove(tile)
             
         curr_water_level -= 1
-    return gate_clusters
+    return update_gate_clusters(agent, gate_clusters)
 
 
 def get_curr_tiles_to_label(agent: BasicAgent, recently_labelled_tiles: dict, labelled_tiles: dict, tiles_to_label: list) -> list:
@@ -172,7 +132,7 @@ def get_curr_tiles_to_label(agent: BasicAgent, recently_labelled_tiles: dict, la
     return curr_tiles_to_label
 
 
-def update_gate_clusters(agent: BasicAgent, gate_clusters: list) -> list:
+def update_gate_clusters(agent: BasicAgent, gate_clusters: list) -> list[set]:
     """ Removes all tiles not adjacent to wall """
     upd_gate_clusters = []
 
@@ -184,7 +144,7 @@ def update_gate_clusters(agent: BasicAgent, gate_clusters: list) -> list:
     return upd_gate_clusters
 
 
-def split_cluster(agent: BasicAgent, gate_cluster: set) -> list:
+def split_cluster(agent: BasicAgent, gate_cluster: set) -> list[set]:
     """ Form groups of connected tiles from a gate cluster """
     visited = set()
     connected_components = []
@@ -211,10 +171,13 @@ def split_cluster(agent: BasicAgent, gate_cluster: set) -> list:
     return connected_components
 
 
-def build_gates(agent: BasicAgent, gate_clusters: list) -> list:
+def generate_bottleneck_bounds(agent: BasicAgent) -> list[list]:
     """ Creates start and end tile for each bottleneck """
+    
     selected_tiles = []
     tiles_to_pair = []
+    gate_clusters = set_gate_clusters(agent)
+
     for gate_cluster in gate_clusters:
         pair = []
         if len(gate_cluster) > 1:
@@ -228,30 +191,28 @@ def build_gates(agent: BasicAgent, gate_clusters: list) -> list:
     return selected_tiles
 
 
-def pair_tiles(pairless_gate_tiles: list) -> list:
+def pair_tiles(pairless_gate_tiles: list) -> list[list]:
 
     paired_tiles = []
-    threshold = 17
+    threshold = 17  # Magic number that can be changed after desire
     result = []
 
     for i in range(len(pairless_gate_tiles)):
         shortest_dist = float('inf')
         closest_tile = None
         start_tile = pairless_gate_tiles[i]
-        if len(paired_tiles) == len(pairless_gate_tiles) - 1:
+
+        if len(paired_tiles) == len(pairless_gate_tiles) - 1: # If odd number of tiles the last one does not get paired
             result.append([start_tile])
 
         for j in range(i + 1, len(pairless_gate_tiles)):
-            
             end_tile = pairless_gate_tiles[j]
-
             if start_tile not in paired_tiles and end_tile not in paired_tiles:
                 dist = distance_between_tiles(start_tile, end_tile)
                 if dist < threshold:
                     if dist < shortest_dist:
                         shortest_dist = dist
                         closest_tile = end_tile
-                # kansek lägga till else och lägga till i lista
         if closest_tile:
             result.append([start_tile, closest_tile])
             paired_tiles.extend([start_tile, closest_tile])
@@ -261,7 +222,7 @@ def pair_tiles(pairless_gate_tiles: list) -> list:
     return result
 
 
-def set_path(agent: BasicAgent, gate_pair: list):
+def build_gate(agent: BasicAgent, gate_pair: list) -> list:
     """ BFS algorithm that finds a walkable path from a start tile to an end tile """
     start = gate_pair[0]
     end = gate_pair[1]
@@ -319,12 +280,12 @@ def add_tile_to_gate_cluster(neighbours: dict, tile: Point2DI, gate_clusters: li
         gate_clusters.append({tile})
 
 
-def distance_between_tiles(start: Point2DI, end: Point2DI) -> int:
-    """ Calculates the distance between to tiles ignoring obstacles """
+def distance_between_tiles(start: Point2DI, end: Point2DI) -> float:
+    """ Calculates the euclidian distance between to tiles ignoring obstacles """
     return math.sqrt((start.x - end.x)**2 + (start.y - end.y)**2)
 
 
-def get_adjacent_regions(neighbours: dict) -> list:
+def get_adjacent_regions(neighbours: dict) -> set:
     """ Returns a set of regions a tile is adjacent to """
     adjacent_regions = set()
     for adj_region in neighbours.values():
@@ -340,7 +301,7 @@ def get_labelled_neighbours(agent: BasicAgent, labelled_tiles: dict, tile: Point
     labelled_neighbours = {}
     for neighbour in neighbours:
         if agent.map_tools.is_walkable(neighbour):
-            if neighbour in labelled_tiles:      # Is the neighbor labelled? If so, add neighbor to labelled neighbors
+            if neighbour in labelled_tiles: # Is the neighbor labelled? If so, add neighbor to labelled neighbors
                 labelled_neighbours[neighbour] = labelled_tiles[neighbour]
     return labelled_neighbours
 
@@ -369,7 +330,7 @@ def get_neighbours(agent: BasicAgent, current_depth: int, tile: Point2DI) -> lis
     return neighbour_coords
 
 
-def get_offset_coords(radius: int) -> list:
+def get_offset_coords(radius: int) -> list[tuple]:
     """ Returns a list of all offset coordinates to a specific depth """
     offset_coordinates = []
     for x in range(-radius, radius + 1):
@@ -378,3 +339,23 @@ def get_offset_coords(radius: int) -> list:
                 offset_coordinates.append((x, y))
 
     return offset_coordinates
+
+
+def sort_bottlenecks(agent: BasicAgent, bottlenecks: list[list], start_base_pos: Point2DI) -> list[list]:
+        """ Fetches bottlenecks and sorts them by closest to startbase position of agent """
+
+        # Get one tile from each bottleneck
+        selected_tiles = [bottleneck[0] for bottleneck in bottlenecks]
+        
+        # Get the distance to each bottleneck and its list index
+        distances = [ 
+            (distance_between_tiles(start_base_pos, tile), i)
+            for i, tile in enumerate(selected_tiles) 
+        ]
+        # Sort the list by distance, where the closest one is first
+        sorted_distances = sorted(distances, key=lambda x: x[0])
+
+        # Add the bottleneck to nearest by its list index
+        nearest_bottles = [bottlenecks[i] for _, i in sorted_distances]
+
+        return nearest_bottles
