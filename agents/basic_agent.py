@@ -1,8 +1,9 @@
 from typing import Union
 import library as pycc
 from modules.build_order import BuildOrder
+from modules.potential_flow.flow_scout import PotentialFlowScout
 # from modules.potential_flow.potential import update_flows
-from modules.potential_flow.regions import Region, parse_regions
+from modules.potential_flow.regions import Region
 from modules.task_manager import TaskManager
 from modules.unit_collection import UnitCollection
 from modules.py_building_placer import PyBuildingPlacer
@@ -36,7 +37,25 @@ class BasicAgent(pycc.IDABot):
         self.internal_minerals = 0
         self.internal_supply = 0
 
-        self.regions: list[Region] = [Region.from_json(data) for data in parse_json_objects("data/regions.json")] #Region.parse_json("data/regions.json")
+        self.rbmap = None
+        self.rbmap_og = None
+        self.new_tile = (0, 0)
+
+        self.regions: list[Region] = [Region.parse_json(self, data) for data in parse_json_objects(
+            "data/regions.json")]  # Region.parse_json("data/regions.json")
+
+        _chokepoints = set()
+        for obj in parse_json_objects("data/chokepoints.json"):
+            _tiles = frozenset(pycc.Point2DI(
+                int(point["x"]), int(point["y"])) for point in obj["tiles"])
+            center = pycc.Point2DI(int(obj["center"]["x"]), int(obj["center"]["y"]))
+            _chokepoints.add((_tiles, center))
+        self.chokepoints = frozenset(_chokepoints)
+
+        # self.chokepoints: frozenset[pycc.Point2DI] = frozenset(pycc.Point2DI(int(point["x"]), int(point["y"])) for point in parse_json_objects("data/chokepoints.json"))
+        self.non_start_bases_positions = None
+
+        self.scout: PotentialFlowScout = None
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
@@ -61,21 +80,28 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
+        self.non_start_bases_positions = frozenset(
+            base.position for base in self.base_location_manager.base_locations if not (
+                base.is_player_start_location(
+                    pycc.PLAYER_SELF) or base.is_player_start_location(
+                    pycc.PLAYER_ENEMY)))
+        for region in self.regions:
+            region.on_start()
 
         # bottlenecks = get_list_of_bottlenecks(self)
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
             self.debugger.on_step(lambda: debug.debug_region_borders(self))
+            # self.debugger.on_step(lambda: debug.debug_region_borders_init(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
-            debug.control_enemy(self)
+            # debug.control_enemy(self)
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
+    
         pycc.IDABot.on_step(self)
-        self.debugger.on_step()
-        
 
         if self.current_frame % FRAME_SKIP == 1:
             if DEBUG_LOGS:
@@ -91,7 +117,9 @@ class BasicAgent(pycc.IDABot):
             # update_flows(self)
 
         if self.current_frame % FRAME_SKIP == 1:
-            new_units = [u for u in self.unit_collection.new_units_this_step if u.player == pycc.PLAYER_SELF]
+            new_units = [
+                u for u in self.unit_collection.new_units_this_step
+                if u.player == pycc.PLAYER_SELF]
             self.task_manager.on_step(new_units)
 
             self.unit_collection.remove_dead_units()
@@ -111,7 +139,21 @@ class BasicAgent(pycc.IDABot):
             # debug.debug_region_text(self)
         if DEBUG_ENEMIES:
             debug.debug_enemies(self)
-            # debug.debug_enemies_text(self)
+            debug.debug_enemies_text(self)
+        if DEBUG_VISUAL:
+            self.debugger.on_step()
+
+        self.map_tools.draw_text_screen(0.01, 0.01, f"hejsan {self.current_frame}")
+        # self.map_tools.draw_circle(self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF).position, 5, pycc.Color.RED)
+
+        if self.scout:
+            if self.scout.latest_py_unit:
+                # print("on_scout")
+                self.scout.on_step(self.scout.latest_py_unit)
+
+                # self.map_tools.draw_circle(self.scout.latest_py_unit.position, 0.5, pycc.Color.RED)
+                # self.scout.debug(self.scout.latest_py_unit)
+        # self.unit_collection.on_step()
 
     def set_up_debugging(self) -> None:
         """Set up visual debugger"""
@@ -160,4 +202,5 @@ class BasicAgent(pycc.IDABot):
         minerals, gas, supply = data.mineral_cost, data.gas_cost, data.supply_cost
         if isinstance(unit_type, pycc.UnitType) and unit_type.unit_typeid in self.UPGRADES:
             minerals, gas = self.UPGRADES[unit_type.unit_typeid]
+
         return minerals, gas, supply

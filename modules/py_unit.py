@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from tasks.task import Task
-    from library import Unit
+    from library import Unit, Point2D
     from agents.basic_agent import BasicAgent
 
 from tasks.task import Idle, Status
@@ -27,6 +27,8 @@ class PyUnit:
         # time to keep the unit in knowledge base before determined old knowledge
         self.last_seen = last_seen
         self.fade_time = fade_time
+
+        self.approx_target: Point2D = None
         # TODO: Add previous known position, in case Unit.position does not work
 
     def __repr__(self):

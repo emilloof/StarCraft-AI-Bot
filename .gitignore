@@ -141,3 +141,5 @@ dmypy.json
 .vscode/settings.json
 .vscode/tasks.json
 .vscode/keybindings.json
+.flake8
+.style.yapf

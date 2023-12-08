@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from modules.potential_flow.regions import get_region
 
 if TYPE_CHECKING:
     from modules.py_unit import PyUnit
@@ -83,9 +82,6 @@ class Scout(Task):
         # We're still on the move.
         self.fails = 0
         self.previous_pos = py_unit.position
-
-        for tile in get_region(self.agent, self.agent.regions, py_unit.tile_position)[0]:
-            self.agent.map_tools.draw_tile(tile)
 
         return Status.NOT_DONE
 

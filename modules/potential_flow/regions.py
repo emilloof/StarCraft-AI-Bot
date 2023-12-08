@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Union
+from functools import cache
+from typing import TYPE_CHECKING, Hashable, Iterable, Union
 
 from library import Point2D, Point2DI, BaseLocation
-import json
 
-from modules.extra import get_neighbours
+from modules.extra import get_neighbours, get_neighbours2, tuple_fromto_tile
 
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
@@ -14,79 +14,122 @@ class Region:
     def __init__(self, agent, tiles: set[Point2DI], mid_point: Point2DI):
         self.agent = agent
         self.tiles = tiles
-        self.mid_point = mid_point # not used currently
-        self.tiles_as_tuples = set((pos.x, pos.y) for pos in tiles)
-        
+        self.mid_point = mid_point  # not used currently
+        self.mid_point_calculated = None
+        self.tiles_as_tuples = {(pos.x, pos.y) for pos in tiles}
+        self.border: set[Point2DI] = set()
+        self.base_locations: list[BaseLocation] = []
 
-    def get_tiles(self):
-        return self.tiles
-    
-    def get_tiles_as_tuples(self):
-        return self.tiles_as_tuples
+    def on_start(self):
+        self.border = fix_region_border(
+            self.agent, calc_region_border(
+                self.agent, self.tiles))  # **{"o": Point2DI}
+        self.base_locations = calc_base_locations(self.agent, self.tiles)
+        self.mid_point_calculated = calc_center(self.tiles)
 
-    def get_center(self):
-        return self.mid_point
-
-    def get_region_border(self) -> set[Point2DI]:
-        border = set()
-        for y in range(self.agent.map_tools.height):
-            for x in range(self.agent.map_tools.width):
-                tile = Point2DI(x, y)
-                if tile not in self.tiles: # worked when tested in jupyter
-                    for neighbour in get_neighbours(self.agent, tile):
-                        if neighbour in self.tiles_as_tuples:
-                            border.append(neighbour)
+    @property
+    def center(self):
+        return self.mid_point_calculated
 
     @classmethod
-    # parses a json file to set tile positions and mid point
-    def parse_json(cls, json_obj: str):
-        return cls(set(Point2DI(pos["x"], pos["y"]) for pos in json_obj["tiles"]), Point2DI(json_obj["center"]["x"], json_obj["center"]["y"]))
-    
+    def parse_json(cls, agent: BasicAgent, json_obj: str):
+        return cls(
+            agent,
+            {Point2DI(pos["x"], pos["y"]) for pos in json_obj["tiles"]},
+            Point2DI(json_obj["center"]["x"], json_obj["center"]["y"]),
+        )
 
-    
-def get_region(agent: BasicAgent, regions: list[Region], tile_of_interest: Point2DI) -> Region:
+
+# @cache
+def get_region(agent: BasicAgent, tile_of_interest: Point2DI) -> Region:
     """Returns the region that the tile is in."""
-    for tile in [tile_of_interest] + agent.map_tools.get_closest_tiles_to(tile): # idk if [tile_of_interest] is needed
-        for region in regions:
-            if tile in region[0]:
-                return region
+    tiles = [tile_of_interest] + get_neighbours(agent, tile_of_interest)
+    for region in agent.regions:
+        if any(tile in region.tiles for tile in tiles):
+            return region
 
-# def get region polygon (borders)
-def get_region_polygon(agent: BasicAgent, regions: list[tuple[set[Point2DI], Point2DI]]) -> list[Point2DI]:
+
+@cache
+def get_region_old(agent: BasicAgent,
+                   tile_s_of_interest: Union[Point2DI, Hashable[Iterable]]) -> Region:
+    """Returns the region that the tile is in."""
+
+    tiles = tile_s_of_interest if isinstance(tile_s_of_interest, Iterable) else [tile_s_of_interest]
+
+    neighbours = get_neighbours(agent, tile_s_of_interest)
+    tiles = [tile_s_of_interest] + neighbours
+    for region in agent.regions:
+        if any(tile in region.tiles for tile in tiles):
+            return region
+
+    # if not found any; do recursive call
+    # return get_region(agent, frozenset(tile for curr_tile in tiles for tile
+    # in get_neighbours(agent, curr_tile)))
+
+
+def calc_base_locations(agent: BasicAgent, tiles: set[Point2DI]) -> list[BaseLocation]:
+    return [
+        base_location
+        for base_location in agent.base_location_manager.base_locations
+        if Point2DI(base_location.position) in tiles
+    ]
+
+
+def fix_region_border(agent: BasicAgent, border_tiles: set[Point2DI]) -> set[Point2DI]:
     """Returns the outer border tiles of the region"""
-    pass
+    tiles_to_remove = {(31, 119), (120, 48)}
+    for tile in {Point2DI(tile[0], tile[1]) for tile in tiles_to_remove}:
+        if tile in border_tiles:
+            border_tiles.remove(tile)
+    return border_tiles
 
-# calculate center of region (with Point2DI), using the already established calculate_center function
-"""def calculate_center(region: set[Point2DI]) -> Point2DI:
-    return Point2DI(*calculate_center(region_as_tuple(region)[0]))
 
-def calculate_center(region: set[tuple[int, int]]) -> tuple[int, int]:
-    return _calculate_center(region.as_tuple)"""
+def calc_region_border(agent: BasicAgent, tiles: set[Point2DI]) -> set[Point2DI]:
+    """Calculates the outer border tiles of the region"""
+    border = set()
+    for y in range(agent.map_tools.height):
+        for x in range(agent.map_tools.width):
+            tile = Point2DI(x, y)
+            if tile not in tiles:
+                for neighbour in get_neighbours(agent, tile):
+                    if neighbour in tiles:
+                        border.add(neighbour)
+    return border
 
-def calculate_center(region: Region) -> Point2D:
-    x = sum(pos.x for pos in region.tiles)
-    y = sum(pos.y for pos in region.tiles)
-    return Point2D(x / len(region.tiles), y / len(region.tiles))
 
- 
-# get base locations in region
-def get_base_locations_in_region(agent: BasicAgent, region) -> list[BaseLocation]:
-    base_locations_in_region = []
-    for base_location in agent.base_location_manager.base_locations:
-        if base_location.position in region[0]:
-            print("yes it is")
-            base_locations_in_region.append(base_location)
-    return base_locations_in_region
+@tuple_fromto_tile
+def calc_region_border_old(agent, tiles: set[tuple]) -> set[Point2DI]:
+    border = set()
+    for y in range(agent.map_tools.height):
+        for x in range(agent.map_tools.width):
+            tile = (x, y)
+            if tile not in tiles:  # worked when tested in jupyter
+                for neighbour in get_neighbours2(agent, tile):
+                    if neighbour in tiles:
+                        border.add(neighbour)
+    return border
 
-### ----------------- DEBUGGING ----------------- ###
+
+def calc_center(tiles: set[Point2DI]) -> Point2D:
+    """Calculates the center of the region"""
+    x = sum(pos.x for pos in tiles)
+    y = sum(pos.y for pos in tiles)
+    return Point2D(x / len(tiles), y / len(tiles))
+
+# ----------------- DEBUGGING ----------------- #
+
 
 def regions_debug(regions: list[tuple[set[Point2DI], Point2DI]]) -> dict[tuple[int, int], int]:
     return _regions_debug(regions, lambda pos: (pos.x, pos.y))
 
-def regions_debug(regions: list[tuple[set[tuple[int, int]], tuple[int, int]]]) -> dict[tuple[int, int], int]:
+
+def regions_debug(regions: list[tuple[set[tuple[int, int]],
+                  tuple[int, int]]]) -> dict[tuple[int, int], int]:
     return _regions_debug(regions, lambda pos: (pos[0], pos[1]))
 
-def _regions_debug(regions: list[tuple[set, tuple]], get_pos: callable) -> dict[tuple[int, int], int]:
+
+def _regions_debug(regions: list[tuple[set, tuple]],
+                   get_pos: callable) -> dict[tuple[int, int], int]:
     color = 1
     rmap = dict()
     for region in regions:

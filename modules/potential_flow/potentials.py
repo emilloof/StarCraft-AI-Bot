@@ -1,39 +1,46 @@
 from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
-from pygame import Vector2
 from modules.extra import point2d_to_tuple
 
-from modules.potential_flow.regions import calculate_center
+from modules.potential_flow.regions import calc_center
 from library import Point2D
+from modules.potential_flow.vector import Vector
 
 from modules.py_unit import PyUnit
 
 if TYPE_CHECKING:
     from modules.potential_flow.flow_scout import PotentialFlowScout
-    from agents.basic_agent import BasicAgent
 
 
 # Enemy potential flow
 # E(z) = p₅e^(-iα)N(z)
 #        ps
-def enemy_pf(enemy, scout_pos):
-    if enemy.target:
-        return needle_pval(enemy.position, scout_pos, enemy.target.position, (enemy.attack_range + 16) * 1.0 / enemy.radius) * ENEMY_NEEDLE * 2.5
-    else:
-        return source_potential(enemy.position, scout_pos) * ENEMY_NEEDLE * (enemy.attack_range) * (1.0 / enemy.radius)
+def enemy_pf(ENEMY_NEEDLE, scout_pos: Point2D, enemy: PyUnit):
+    # Create a vector that represents the direction the unit is looking at
+    range_used = enemy.unit_type.attack_range # (attack_range vs sight_range)?. prob use attackrange since scv.attack_range = 0.1, but marine.attack_range = 5
+    target_x = enemy.position.x + range_used * math.cos(enemy.facing)
+    target_y = enemy.position.y + range_used * math.sin(enemy.facing)
+    target = Point2D(target_x, target_y)
+
+    enemy.approx_target = target
+
+    return ENEMY_NEEDLE * needle_pval(enemy.position, scout_pos, target, enemy.unit_type.attack_range * 1.0 / enemy.radius) * 2.5 # vene om ska ha 2.5 *
 
 # Like source/sink potential but the shape change to a direction
-def needle_pval(scout, p, target, bias):
+def needle_pval(source, point, target, bias):
     if target == None:
-        return Vector2()
-    x = p.x() - scout.x()
-    y = p.y() - scout.y()
+        return Vector()
+    x = point.x - source.x
+    y = point.y - source.y
     r2 = 1.0 * x * x + 1.0 * y * y
 
-    V = Vector2(target.x() - scout.x(), target.y() - scout.y())
-    v = Vector2(x, y)
-    r = Vector2(x / r2, y / r2)
+    V = Vector(target.x - source.x, target.y - source.y)
+    v = Vector(x, y)
+    r = Vector(x / r2, y / r2)
+
+    if not V: # maybe should use enemy.has_target instead
+        return Vector()
 
     # cos(anpha)
     cosn = 1 / bias
@@ -56,22 +63,22 @@ def needle_pval(scout, p, target, bias):
 
 # V(z) = ilog(z-z_start)
 # s=curReg_center, p=enemy_position
-@point2d_to_tuple
-def vortex_potential(scout, p):
-    ic(scout)
-    x = p[0] - scout[0]  # x - x_start
-    y = p[1] - scout[1]  # y - y_start
+# @point2d_to_tuple
+def vortex_potential(source, point):
+    # ic(source)
+    x = point.x - source.x  # x - x_start
+    y = point.y - source.y  # y - y_start
     r2 = x * x + y * y  # (x-x_start)^2 + (y-y_start)^2
-    return Vector2(y / r2, -x / r2)  # u, v
+    return Vector(y / r2, -x / r2)  # u, v
 
 
 # S(z) = log(z-z_s)
-@point2d_to_tuple
-def source_potential(scout, p):
-    x = p[0] - scout[0]
-    y = p[1] - scout[1]
+# @point2d_to_tuple
+def source_potential(source, point):
+    x = point.x - source.x
+    y = point.y - source.y
     r2 = 1.0 * x * x + y * y
-    return Vector2(x / r2, y / r2)
+    return Vector(x / r2, y / r2)
 
 
 # R(z) = p₁V(z) + p₂S(z) if ||z'|| > dᵣ_ₜₕᵣₑₛ
@@ -89,14 +96,14 @@ def region_pf(region_center, pos, center, scout: PotentialFlowScout, vortex_corr
 # Obstacle potential flow
 # O(z) = p₁Oᵥ(z) + p₂Oₛ(z) if ||z꜀'|| > dᵣ_ₜₕᵣₑₛ
 #        p₁Oᵥ(z) - p₂Oₛ(z) otherwise
-def obstacle_potential(obs_pos, pos, center, a2):
+def obstacle_potential(scout: PotentialFlowScout, obs_pos, pos, center, a2):
     Ov = obstacle_vortex_potential(obs_pos, pos, center, a2)
     Os = obstacle_source_potential(obs_pos, pos, center, a2)
 
-    if center.square_distance(pos) < DISTANCE_TO_SWITCH_SOURCE_SINK:
-        return Ov * CENTER_VORTEX * 1.2 + Os * CENTER_SOURCE_SINK * 1.2
+    if center.square_distance(pos) < scout.DISTANCE_TO_SWITCH_SOURCE_SINK:
+        return Ov * scout.CENTER_VORTEX * 1.2 + Os * scout.CENTER_SOURCE_SINK * 1.2
     else:
-        return Ov * CENTER_VORTEX * 1.2 - Os * CENTER_SOURCE_SINK * 1.2
+        return Ov * scout.CENTER_VORTEX * 1.2 - Os * scout.CENTER_SOURCE_SINK * 1.2
 
 
 # Circle theorem obstacle by a vortex O(z) = -ilog(a^2/(z-Z)-conj(z_c-Z))
@@ -114,7 +121,7 @@ def obstacle_vortex_potential(obs_pos, pos, center, a2):
     deno = r2 * (a2 * a2 - 2 * a2 * (x * xc + y * yc) + r2 * (xc * xc + yc * yc))
     vx = a2 * (a2 * y - 2 * x * y * xc - y2 * yc + x2 * yc) / deno
     vy = -a2 * (a2 * x - 2 * x * y * yc - x2 * xc + y2 * xc) / deno
-    return Vector2(vx, vy)
+    return Vector(vx, vy)
 
 
 # O(z) = log(a^2/(z-Z)-conj(z_c-Z))
@@ -122,10 +129,10 @@ def obstacle_vortex_potential(obs_pos, pos, center, a2):
 # p : considered position
 # c: center vortex position
 def obstacle_source_potential(scout, p, c, a2):
-    x = p[0] - scout[0]
-    y = p[1] - scout[1]
-    xc = c[0] - scout[0]
-    yc = c[1] - scout[1]
+    x = p.x - scout.x
+    y = p.y - scout.y
+    xc = c.x - scout.x
+    yc = c.y - scout.y
     x2 = 1.0 * x * x
     y2 = 1.0 * y * y
     r2 = x2 + y2
@@ -135,4 +142,4 @@ def obstacle_source_potential(scout, p, c, a2):
     vx = -a2 * (a2 * x - 2 * x * y * yc - x2 * xc + y2 * xc) / deno
     vy = -a2 * (a2 * y - 2 * x * y * xc - y2 * yc + x2 * yc) / deno
 
-    return (vx, vy)
+    return Vector(vx, vy)

@@ -14,7 +14,7 @@ from tasks.gather_gas import GatherGas
 from tasks.build import Build
 from tasks.scout import Scout
 from tasks.attack import Attack
-from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID, Point2DI
+from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID
 from modules.extra import exists_producer_for, get_worker_type, has_prerequisites
 from queue import SimpleQueue
 from config import DEBUG_CONSOLE
@@ -209,16 +209,14 @@ class TaskManager:
 
     def scout(self) -> None:
         # ONLY SCOUTS ONE BASE (ENEMY BASE)
-        enemy_base_pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
+        # enemy_base_pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
 
-        scout_bases = SimpleQueue()
-        scout_bases.put(enemy_base_pos)
+        #scout_bases = SimpleQueue()
+        #scout_bases.put(enemy_base_pos)
         # Creates a new task and provides a queue of coordinates to visit
-        new_task = PotentialFlowScout(scout_bases, SCOUT_PRIO, self.agent)
+        new_task = PotentialFlowScout(None, SCOUT_PRIO, self.agent)
 
-        _temp_target_reg = self.agent.base_location_manager.get_next_expansion(PLAYER_SELF).position
-
-        new_task.set_scout_target(Point2DI(_temp_target_reg))
+        self.agent.scout = new_task
 
         # here choke point should be used
 
@@ -226,7 +224,10 @@ class TaskManager:
         #                           key=lambda b: b.position.square_distance(unit.position),
         #                           default=None)
 
-        new_task.set_attract_points(self.agent.regions[0][1]) # should be clossst chokepoint! *
+        # new_task.set_attract_points({self.agent.regions[0].get_center()}) # should be clossst chokepoint! *
+        # find pos in list closest to scout position
+
+        # Example usage:
 
         self.task_queue.add(new_task)
 

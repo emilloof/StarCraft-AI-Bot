@@ -93,13 +93,15 @@ class UnitCollection:
         # All units that have left the vision are removed
         for py_unit in self.needs_vision_on:
             # add lost enemy to old_enemies
-            self.old_enemies[py_unit.unit] = py_unit
+            if py_unit.unit.player == PLAYER_ENEMY:
+                self.old_enemies[py_unit.unit] = py_unit
             self.remove_from_all_groups(py_unit)
         self.remove(self.needs_vision_on)
         self.needs_vision_on = []
 
         # remove too old enemies
         for unit in list(self.old_enemies.keys()):
+            ic(self.old_enemies[unit])
             if (self.agent.current_frame - self.old_enemies[unit].last_seen > TIME_KEEP_ENEMY):
                 self.old_enemies.pop(unit)
     

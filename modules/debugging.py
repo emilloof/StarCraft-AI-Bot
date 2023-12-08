@@ -4,12 +4,10 @@ from library import Point2DI
 import json
 
 from modules.enemy_debugging import debug_enemies, debug_enemies_text
-from modules.extra import get_neighbours
+from modules.extra import get_neighbours2
 from modules.potential_flow.regions import (
-    calculate_center,
+    calc_center,
     get_region,
-    parse_regions,
-    Region.get_tiles_as_tuples,
     regions_debug,
 )
 
@@ -58,9 +56,9 @@ def debug_regions(agent: BasicAgent) -> None:
     regions = Region.get_tiles_as_tuples(agent.regions)
     rmap = regions_debug(regions)
     for region in regions:
-        center = calculate_center(region[0])
+        center = calc_center(region[0])
         center = tuple(map(int, center))
-        ic(center)
+        # ic(center)
         rmap[center] = 15
 
     agent.debugger.set_display_values(
@@ -96,28 +94,74 @@ def debug_regions_old(agent: BasicAgent) -> None:
         rmap, (agent.map_tools.width, agent.map_tools.height)
     )
 
-
 def debug_region_borders(agent: BasicAgent) -> None:
-    regions = Region.get_tiles_as_tuples(agent.regions)
     rbmap = dict()
     color = 1
-    for region in regions:
-        for y in range(agent.map_tools.height):
-            for x in range(agent.map_tools.width):
-                if (x, y) not in region[0]:
-                    for neighbour in get_neighbours(agent, (x, y)):
-                        if neighbour in region[0]:
-                            rbmap[neighbour] = color
+    for region in agent.regions:
+        for border_tile in region.get_border():
+            rbmap[(border_tile.x, border_tile.y)] = color
         color += 1
     
     agent.debugger.set_display_values(rbmap, (agent.map_tools.width, agent.map_tools.height))
+
+def debug_region_borders_old(agent: BasicAgent) -> None:
+    regions_as_tuples = (region.get_tiles_as_tuples() for region in agent.regions)
+    rbmap = dict()
+    color = 1
+
+    chokepoint_tiles = {(tile.x, tile.y) for chokepoint in agent.chokepoints for tile in chokepoint[0]}
+    for region in regions_as_tuples:
+        for y in range(agent.map_tools.height):
+            for x in range(agent.map_tools.width):
+                if (x, y) not in region:
+                    for neighbour in get_neighbours2(agent, (x, y)):
+                        if neighbour in region:
+                            rbmap[neighbour] = color
+                        #    # if tile not in any chokepoint tile
+                        #    if neighbour not in chokepoint_tiles:
+                        #        rbmap[neighbour] = color
+        color += 1
+    
+    #for chokepoint in chokepoint_tiles:
+    #    rbmap[chokepoint] = 1
+    rbmap[(150, 130)] = 3
+
+    """for chokepoint in agent.chokepoints:
+        if chokepoint.as_tuple() in region:
+            print('was')
+            rbmap.remove(chokepoint.as_tuple())"""
+    
+    agent.debugger.set_display_values(rbmap, (agent.map_tools.width, agent.map_tools.height))
+
+def debug_region_borders_init(agent: BasicAgent) -> None:
+    rbmap = dict()
+    if not agent.rbmap_og:
+        color = 1
+        for region in (region.get_tiles_as_tuples() for region in agent.regions):
+            for y in range(agent.map_tools.height):
+                for x in range(agent.map_tools.width):
+                    if (x, y) not in region:
+                        for neighbour in get_neighbours2(agent, (x, y)):
+                            if neighbour in region:
+                                rbmap[neighbour] = color
+            color += 1
+    agent.rbmap_og = rbmap
+    agent.rbmap = rbmap
+    agent.debugger.set_display_values(rbmap, (agent.map_tools.width, agent.map_tools.height))
+
+
+def debug_region_borders_live(agent: BasicAgent, new_tile) -> None:
+    rbmap = agent.rbmap_og.copy()
+    rbmap[new_tile] = 3
+    agent.debugger.set_display_values(rbmap, (agent.map_tools.width, agent.map_tools.height))
+
 
 def debug_terrain(agent: BasicAgent) -> None:
     tmap = dict()
     for y in range(agent.map_tools.height):
         for x in range(agent.map_tools.width):
             if agent.map_tools.is_walkable(x, y):
-                for neighbour in get_neighbours(agent, x, y).values():
+                for neighbour in get_neighbours2(agent, x, y).values():
                     if not agent.map_tools.is_walkable(neighbour[0], neighbour[1]):
                         tmap[neighbour] = 1
     print(tmap)
@@ -172,7 +216,7 @@ def debug_region_text(agent: BasicAgent) -> None:
     """ Displays text on screen with information about which region the scout unit is in.
         Also illustrates the color of that region on the map."""
     for py_unit in agent.unit_collection.get_group(PLAYER_SELF):
-        region = get_region(agent, agent.regions, py_unit.tile_position)
+        region = get_region(agent, py_unit.tile_position)
         agent.map_tools.draw_text(py_unit.position, f"Region: {region}")
         agent.map_tools.draw_text(py_unit.position, f"Region: {region}", color=(255, 0, 0))
         if region:

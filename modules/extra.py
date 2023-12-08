@@ -19,8 +19,10 @@ BaseLocation.__repr__ - overrides how a base location is represented.
 Color.__floordiv__ - overrides floor division (divides RGB-color with int).
 """
 from __future__ import annotations
+from functools import cache
 import json
-from typing import TYPE_CHECKING, Optional, Union
+import math
+from typing import TYPE_CHECKING, Hashable, Iterable, Optional, Union
 
 if TYPE_CHECKING:
     from py_unit import PyUnit
@@ -32,12 +34,24 @@ from library import UnitType, TypeData, PLAYER_SELF, Point2D, UPGRADE_ID, Point2
     BaseLocation, Race, PLAYER_ENEMY
 
 def tuple_fromto_tile(func):
-    def wrapper(*args):
+    def wrapper(*args, **kwargs):
+        # input = kwargs.get("i", False)
+        output = kwargs.get("o", False)
+
+        #if input and output:
+        if output and output == Point2DI:
+            result = func(*args)
+            if isinstance(result, set):
+                return {Point2DI(*tpl) for tpl in result}
+
         if any(isinstance(arg, tuple) for arg in args):
             return func(*args)
         
         # If Point2DI do special handling
         args = (arg.as_tuple() if isinstance(arg, Point2DI) else arg for arg in args)
+        print(f"\n func: {func.__name__}")
+        for arg in args:
+            print(f"arg: {arg}")
         result = func(*args)
         if isinstance(result, set):
             return {Point2DI(*arg) for arg in result}
@@ -169,26 +183,36 @@ def unit_types_by_condition(agent: BasicAgent, condition: callable) -> set[UNIT_
     return {unit_typeid for unit_typeid in vars(UNIT_TYPEID).values() if
             isinstance(unit_typeid, UNIT_TYPEID) and condition(UnitType(unit_typeid, agent))}
 
+@cache
+def get_neighbours(agent: BasicAgent, pos) -> list[Point2DI]:
+    x = pos.x
+    y = pos.y
+    return [
+        Point2DI(x - 1, y) if x > 0 else None, # left
+        Point2DI(x + 1, y) if x < agent.map_tools.width - 1 else None, # right
+        Point2DI(x, y - 1) if y > 0 else None, # up
+        Point2DI(x, y + 1) if y < agent.map_tools.height - 1 else None # down
+    ]
 
 @tuple_fromto_tile
-def get_neighbours(agent: BasicAgent, pos) -> list[Point2DI]:
-        x, y = pos
-        return [
-            (x - 1, y) if x > 0 else None, # left
-            (x + 1, y) if x < agent.map_tools.width - 1 else None, # right
-            (x, y - 1) if y > 0 else None, # up
-            (x, y + 1) if y < agent.map_tools.height - 1 else None # down
-        ]
+def get_neighbours2(agent: BasicAgent, pos) -> list[Point2DI]:
+    x, y = pos
+    return [
+        (x - 1, y) if x > 0 else None, # left
+        (x + 1, y) if x < agent.map_tools.width - 1 else None, # right
+        (x, y - 1) if y > 0 else None, # up
+        (x, y + 1) if y < agent.map_tools.height - 1 else None # down
+    ]
 
 
 
-def get_enemies_in_radius(agent, position: Point2D, radius: int) -> set[PyUnit]:
+def get_enemies_in_radius(agent: BasicAgent, position: Point2D, radius: int) -> set[PyUnit]:
     """Returns a list of enemy units within a given radius of a given position."""
     # units_in_radius = []
 
     return agent.unit_collection.get_group(
         lambda unit: unit.player == PLAYER_ENEMY
-        and position.square_distance(unit.position) <= radius
+        and position.distance(unit.position) <= radius
     )
 
     """for enemy in agent.unit_collection.get_group(PLAYER_ENEMY):
@@ -198,23 +222,51 @@ def get_enemies_in_radius(agent, position: Point2D, radius: int) -> set[PyUnit]:
 
     return units_in_radius"""
 
+@cache
+def get_enemy_start_pos(agent):
+    return agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
+
+
+@cache
+def get_closest(_pos: Point2D, items: Hashable[Iterable], getter=lambda pos: pos):
+    return min(items, key=lambda pos: _pos.square_distance(getter(pos)))
+
 
 # Wrapper function
 def point2d_to_tuple(func):
     def wrapper(*args):
-        args = tuple(arg.as_tuple() if isinstance(arg, Point2D) else arg for arg in args)
+        args = (arg.as_tuple() if isinstance(arg, (Point2D, Point2DI)) else arg for arg in args)
         return func(*args)
     return wrapper
+
+def get_approx_distance(self, position):
+    max_val = abs(self.x - position.x)
+    min_val = abs(self.y - position.y)
+    if max_val < min_val:
+        min_val, max_val = max_val, min_val
+
+    if min_val <= (max_val >> 2):
+        return max_val
+    
+    min_calc = (3 * min_val) >> 3
+    return (min_calc >> 5) + min_calc + max_val - (max_val >> 4) - (max_val >> 6)
 
 
 Point2D.square_distance = lambda self, other: (self.x - other.x) ** 2 + (self.y - other.y) ** 2
 Point2D.__eq__ = lambda self, other: isinstance(other, Point2D) and self.square_distance(other) < 0.001 ** 2
 Point2D.as_tuple = lambda self: (self.x, self.y)
-Point2D.as_tile = lambda self: Point2DI(self.x, self.y)
+Point2D.as_tile = lambda self: Point2DI(self)
+Point2D.get_approx_distance = lambda self, other: get_approx_distance(self, other)
+Point2D.distance = lambda self, other: math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+Point2D.__add__ = lambda self, other: Point2D(self.x + other.x, self.y + other.y)
 
 Point2DI.square_distance = lambda self, other: (self.x - other.x) ** 2 + (self.y - other.y) ** 2
+Point2DI.distance = lambda self, other: math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
 Point2DI.__add__ = lambda self, other: Point2DI(self.x + other.x, self.y + other.y)
 Point2DI.as_tuple = lambda self: (self.x, self.y)
+Point2DI.get_approx_distance = lambda self, other: get_approx_distance(self, other)
+
+
 
 BaseLocation.__repr__ = lambda self: f"<BaseLocation: {self.position}>"
 
