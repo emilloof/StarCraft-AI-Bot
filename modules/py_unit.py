@@ -1,11 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
+from math import cos, sin
 
 if TYPE_CHECKING:
     from tasks.task import Task
-    from library import Unit, Point2D
+    from library import Unit
     from agents.basic_agent import BasicAgent
-
+from library import Point2D, PLAYER_ENEMY
+from functools import cached_property
 from tasks.task import Idle, Status
 
 
@@ -27,8 +29,6 @@ class PyUnit:
         # time to keep the unit in knowledge base before determined old knowledge
         self.last_seen = last_seen
         self.fade_time = fade_time
-
-        self.approx_target: Point2D = None
         # TODO: Add previous known position, in case Unit.position does not work
 
     def __repr__(self):
@@ -42,6 +42,24 @@ class PyUnit:
         if item not in self.__dict__.keys():
             return getattr(self.unit, item)
         return object.__getattribute__(self, item)
+
+    @cached_property
+    def is_enemy(self) -> bool:
+        """Returns if unit is an enemy"""
+        return PLAYER_ENEMY in self.groups
+
+    @property
+    def target_pos(self) -> Point2D:
+        """Returns the approximated of the unit"""
+        if self.is_enemy:
+            # (attack_range vs sight_range)?.
+            # prob use attackrange since scv.attack_range = 0.1, but marine.attack_range = 5
+            range_used = self.unit.unit_type.attack_range
+            target_x = self.unit.position.x + range_used * cos(self.unit.facing)
+            target_y = self.unit.position.y + range_used * sin(self.unit.facing)
+            return Point2D(target_x, target_y)
+        # else (not an enemy)
+        return self.unit.target.position
 
     def on_step(self) -> Status:
         """

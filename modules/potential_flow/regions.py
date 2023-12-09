@@ -42,6 +42,9 @@ class Region:
 
         # hard coded: removes two tiles that were "closing" region
         border -= {Point2DI(31, 119), Point2DI(120, 48)}
+        border -= {Point2DI(32, 119), Point2DI(31, 120), Point2DI(120, 47), Point2DI(119, 48)}
+        border -= {Point2DI(32, 121), Point2DI(33, 120), Point2DI(118, 47), Point2DI(119, 46)}
+        border -= {Point2DI(33, 122), Point2DI(34, 121), Point2DI(117, 46), Point2DI(118, 45)}
         return border
 
     @cached_property

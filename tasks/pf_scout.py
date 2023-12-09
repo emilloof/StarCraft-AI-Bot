@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from config import TIME_KEEP_ENEMY, TIME_KEEP_ENEMY_BUILDING
+from config import TIME_KEEP_ENEMY, TIME_KEEP_ENEMY_BUILDING, DEBUG_SCOUT
 from modules.extra import get_closest, get_enemy_start_pos
 
 from modules.potential_flow.regions import Region
-from modules.potential_flow.potential import calculate_pval
+from modules.potential_flow.potentials import calculate_pval
 from modules.potential_flow.vector import Vector
 from tasks.task import Status
 from tasks.scout import Scout
@@ -14,7 +14,7 @@ from modules.py_unit import PyUnit
 if TYPE_CHECKING:
     from agents.improved_agent import ImprovedAgent
 
-from library import Point2D, Point2DI, PLAYER_ENEMY, Color, PLAYER_SELF
+from library import Point2D, Point2DI, Color
 from queue import SimpleQueue
 
 show_object_r = True
@@ -23,6 +23,8 @@ show_region_p = True
 show_border_p = True
 show_all_p = False
 
+SECOND_IN_FRAMES = 16
+
 
 class PFscout(Scout):
 
@@ -30,19 +32,18 @@ class PFscout(Scout):
         super().__init__(None, prio, agent, is_high_freq=True)
         # super().__init__(scout_bases, prio, agent)
         self.target_region: Region = None
-        self.go = 1    # 1: proceed forward, -1: reverse direction
+        self.go = 1  # 1: proceed forward, -1: reverse direction
 
-        self.CENTER_VORTEX = 19    # 600
-        self.CENTER_SOURCE_SINK = 3    # 100
-        self.DISTANCE_TO_SWITCH_SOURCE_SINK = 4    # 128
-        self.DISTANCE_TO_ACTIVE_BORDER_FLOW = 24    # 96
-        self.BORDER_VORTEX = -16    # -500
-        self.BORDER_SOURCE = 9    # 300
-        self.BUILDING_OBSTACLE = 5    # 150
-        self.ENEMY_NEEDLE = 9    # 300
+        self.CENTER_VORTEX = 19
+        self.CENTER_SOURCE_SINK = 3
+        self.DISTANCE_TO_SWITCH_SOURCE_SINK = 4
+        self.DISTANCE_TO_ACTIVE_BORDER_FLOW = 3
+        self.BORDER_VORTEX = -16
+        self.BORDER_SOURCE = 9
+        self.BUILDING_OBSTACLE = 5
+        self.ENEMY_NEEDLE = 9
 
-        self.enemies = set()    # dict[Unit, PyUnit] = dict()
-
+        self.enemies = set()
         self.attract_points: set[Point2D] = set()
 
         self.frame_since_switch = 0
@@ -50,17 +51,13 @@ class PFscout(Scout):
         self.changed_region = False
 
         self.use_border = True
-        self.latest_frame = 0
 
-        self.region_potentials: list[Vector] = []
-        self.border_potentials = []
-        self.all_potentials = []
-
-        self.obstacles_debug = set()
-        self.unit_potentials = []
-
-        self.latest_py_unit = None
-        self.togg_mov = True
+        if DEBUG_SCOUT:
+            self.region_potentials: list[Vector] = []
+            self.border_potentials = []
+            self.all_potentials = []
+            self.obstacles_debug = set()
+            self.unit_potentials = []
 
     def on_start(self, py_unit: PyUnit) -> Status:
         """
@@ -72,7 +69,7 @@ class PFscout(Scout):
 
         if py_unit.unit_type.unit_typeid in self.candidates:
             return Status.DONE
-        ic("FAIL")
+        print("FAIL")
         return Status.FAIL
 
     def on_step(self, py_unit: PyUnit) -> Status:
@@ -82,23 +79,18 @@ class PFscout(Scout):
         :return: Status.DONE if unit is finished scouting. Status.NOT_DONE if it keeps scouting.
         Status.FAIL if unit is idle.
         """
-        if self.latest_frame == self.agent.current_frame:
-            return Status.NOT_DONE
-
-        self.latest_py_unit = py_unit
-
         self.scout_enemy_opening(py_unit)
 
         self.fade_enemies()    # should (according *) be at top of do_pf()
-
-        self.latest_frame = self.agent.current_frame
 
         return Status.NOT_DONE
 
     def do_pf(self, py_unit):
         # Control scout's movement using potential flow
-        self.debug(py_unit)
         self.move(py_unit)
+
+        if DEBUG_SCOUT:
+            self.debug(py_unit)
 
     def debug(self, py_unit: PyUnit):
         if show_object_r:
@@ -138,12 +130,12 @@ class PFscout(Scout):
     def move(self, py_unit: PyUnit):
         # Code for controlling scout's movement using potential flow
 
-        pos = py_unit.position
+        scout_pos = py_unit.unit.position
 
-        # not sure that unit.target works
-        if not (self.agent.current_frame % 1 == 0 or self.near_reach_pos(pos, self.scout_target) or
-                (self.near_reach_pos(pos, py_unit.target.position, 1))):
-            return    # do nothing
+        if not (self.agent.current_frame % 1 == 0
+                or self.near_reach_pos(scout_pos, self.scout_target) or
+                (self.near_reach_pos(scout_pos, py_unit.target.position, 1))):
+            return  # do nothing
 
         this_target = py_unit.position    # self.scout_target
 
@@ -159,9 +151,8 @@ class PFscout(Scout):
         # reverse back
         self.reverse_flows(should_reverse)
 
-        self.scout_target = Point2D(py_unit.position.x + speed.x, py_unit.position.y + speed.y)
+        self.scout_target = scout_pos + speed
 
-        # Unsure if Vector2.length() should be used
         ratio = 1 / speed.length()
         seg = speed * ratio
         this_target = (seg * 3) + this_target
@@ -169,22 +160,17 @@ class PFscout(Scout):
             this_target = seg + this_target
 
             if self.agent.map_tools.is_valid_position(this_target):
-                print("111")
-                # MAKE VALID?
                 break
 
-        # draw this tile
-        self.agent.map_tools.draw_tile(Point2DI(this_target))
-        self.agent.map_tools.draw_text(py_unit.position, "scout", Color.WHITE)
+        if DEBUG_SCOUT:
+            self.agent.map_tools.draw_tile(Point2DI(this_target))
+            self.agent.map_tools.draw_text(py_unit.position, "scout", Color.WHITE)
 
-        if self.togg_mov:
-            py_unit.move(this_target)
+        py_unit.move(this_target)
 
     def register_enemy_positions(self, enemies: set[PyUnit]):
         for enemy in enemies:
-            # TODO: update enemy position, in case Unit.position does not work
             if enemy in self.enemies:
-                # update (idk if needed)
                 enemy.last_seen = self.agent.current_frame
             else:
                 enemy.fade_time = (TIME_KEEP_ENEMY_BUILDING if enemy.unit_type.is_building
@@ -216,8 +202,6 @@ class PFscout(Scout):
 
     # @cache
     def scout_enemy_opening(self, py_unit):
-        print("scout_enemy_opening")
-        # same val everytime (not sure if needs updating, so wont work??*)
         enemy_start_pos = get_enemy_start_pos(self.agent)
         enemy_start_region = self.agent.region_manager.get_region(enemy_start_pos.as_tile())
 
@@ -230,54 +214,71 @@ class PFscout(Scout):
         next_target_region = self.agent.region_manager.get_region(next_target_pos.as_tile())
         if (not self.switch_region and next_target_pos and closest_choke
                 and py_unit.position.distance(closest_choke) > 3):
-            if cur_reg == enemy_start_region or cur_reg == next_target_region:
-                if (self.agent.current_frame > self.frame_since_switch + 16 * 40
-                        and cur_reg == enemy_start_region and self.changed_region):
-                    self.switch_region = True
-                    self.changed_region = False
-
-                    self.target_region = next_target_region
-                    self.add_attract_point(waypoint)    # is center
+            if cur_reg == enemy_start_region:
+                if (
+                    self.agent.current_frame > self.frame_since_switch + SECOND_IN_FRAMES * 40
+                    and self.changed_region
+                ):
+                    self.switch_the_region(next_target_region, waypoint)
                 else:
-                    if cur_reg == enemy_start_region and not self.changed_region:
-                        self.attract_points.remove(waypoint)
-                        self.changed_region = True
-                        self.frame_since_switch = self.agent.current_frame
-
+                    if not self.changed_region:
+                        self.notify_of_switch(waypoint)
                     self.do_pf(py_unit)
+            elif cur_reg == next_target_region:
+                self.do_pf(py_unit)
             else:
-                self.target_region = enemy_start_region
-                self.add_attract_point(waypoint)
-                py_unit.move(enemy_start_pos)
+                self.normal_scout(py_unit, enemy_start_region, waypoint, enemy_start_pos)
         elif (next_target_pos and self.switch_region and closest_choke
               and py_unit.position.square_distance(closest_choke) > 3):
-            if cur_reg == enemy_start_region or cur_reg == next_target_region:
-                if (self.agent.current_frame > self.frame_since_switch + 16 * 10
+            if cur_reg == enemy_start_region:
+                if (self.agent.current_frame > self.frame_since_switch + SECOND_IN_FRAMES * 10
                         and cur_reg == next_target_region and self.changed_region):
-                    self.switch_region = False
-                    self.changed_region = False
-                    self.target_region = enemy_start_region
-                    self.add_attract_point(waypoint)
+                    self.after_switch(enemy_start_region, waypoint)
                 else:
                     if cur_reg == next_target_region and not self.changed_region:
-                        self.attract_points.remove(waypoint)
-                        self.changed_region = True
-                        self.frame_since_switch = self.agent.current_frame
-
+                        self.notify_of_switch(waypoint)
+                    self.do_pf(py_unit)
+            elif cur_reg == next_target_region:
+                if (
+                    self.agent.current_frame > self.frame_since_switch + 16 * 10
+                    and self.changed_region
+                ):
+                    self.after_switch(enemy_start_region, waypoint)
+                else:
+                    if not self.changed_region:
+                        self.notify_of_switch(waypoint)
                     self.do_pf(py_unit)
             else:
-                self.target_region = next_target_region
-                self.add_attract_point(waypoint)
-
-                py_unit.move(next_target_pos)
+                self.normal_scout(py_unit, enemy_start_region, waypoint, enemy_start_pos)
         elif not self.switch_region:
             # If not reach, move directly to enemy base
             self.target_region = enemy_start_region
             py_unit.move(enemy_start_pos)
-        # If not reach, move directly to next enemy base
         else:
             self.target_region = next_target_region
             py_unit.move(next_target_pos)
 
         if next_target_pos:
             self.agent.map_tools.draw_circle(next_target_pos, 5, Color(255, 165, 0))
+
+    def normal_scout(self, py_unit, enemy_start_region, waypoint, enemy_start_pos):
+        self.target_region = enemy_start_region
+        self.add_attract_point(waypoint)
+        py_unit.move(enemy_start_pos)
+
+    def notify_of_switch(self, waypoint):
+        self.attract_points.remove(waypoint)
+        self.changed_region = True
+        self.frame_since_switch = self.agent.current_frame
+
+    def after_switch(self, enemy_start_region, waypoint):
+        self.switch_region = False
+        self.changed_region = False
+        self.target_region = enemy_start_region
+        self.add_attract_point(waypoint)
+
+    def switch_the_region(self, region: Region, waypoint):
+        self.switch_region = True
+        self.changed_region = False
+        self.target_region = region
+        self.add_attract_point(waypoint)  # is center

@@ -1,7 +1,7 @@
 # sourcery-ignore
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Type, Union, Optional
-from modules.potential_flow.flow_scout import PFscout
+from tasks.pf_scout import PFscout
 
 if TYPE_CHECKING:
     from tasks.task import Task

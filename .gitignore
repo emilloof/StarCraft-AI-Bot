@@ -143,4 +143,4 @@ dmypy.json
 .vscode/keybindings.json
 .flake8
 .style.yapf
-modules/.sourcery.yaml
+.sourcery.yaml
