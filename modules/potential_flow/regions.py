@@ -1,13 +1,13 @@
 from __future__ import annotations
-from functools import cache
-from typing import TYPE_CHECKING, Hashable, Iterable, Union
+from typing import TYPE_CHECKING
 
 from library import Point2D, Point2DI, BaseLocation
 
-from modules.extra import get_neighbours, get_neighbours2, tuple_fromto_tile
+from modules.extra import get_neighbours, parse_json_objects, get_closest
 
 if TYPE_CHECKING:
-    from agents.basic_agent import BasicAgent
+    from agents.improved_agent import ImprovedAgent
+from functools import cached_property, cache
 
 
 class Region:
@@ -17,22 +17,50 @@ class Region:
         self.mid_point = mid_point  # not used currently
         self.mid_point_calculated = None
         self.tiles_as_tuples = {(pos.x, pos.y) for pos in tiles}
-        self.border: set[Point2DI] = set()
         self.base_locations: list[BaseLocation] = []
 
-    def on_start(self):
-        self.border = fix_region_border(
-            self.agent, calc_region_border(
-                self.agent, self.tiles))  # **{"o": Point2DI}
-        self.base_locations = calc_base_locations(self.agent, self.tiles)
-        self.mid_point_calculated = calc_center(self.tiles)
+        # init cached properties
+        _ = self.border
+        _ = self.center
+        _ = self.base_locations
 
-    @property
-    def center(self):
-        return self.mid_point_calculated
+    def on_start(self):
+        pass
+        # self.base_locations = calc_base_locations(self.agent, self.tiles)
+        # self.mid_point_calculated = calc_center(self.tiles)
+
+    @cached_property
+    def border(self):
+        border = frozenset()
+        for y in range(self.agent.map_tools.height):
+            for x in range(self.agent.map_tools.width):
+                tile = Point2DI(x, y)
+                if tile not in self.tiles:
+                    for neighbour in get_neighbours(tile, self.agent):
+                        if neighbour in self.tiles:
+                            border.add(neighbour)
+
+        # hard coded: removes two tiles that were "closing" region
+        border -= {Point2DI(31, 119), Point2DI(120, 48)}
+        return border
+
+    @cached_property
+    def center(self) -> Point2D:
+        """Returns the center of the region"""
+        x = sum(pos.x for pos in self.tiles)
+        y = sum(pos.y for pos in self.tiles)
+        return Point2D(x / len(self.tiles), y / len(self.tiles))
+
+    @cached_property
+    def base_locations(self) -> frozenset[BaseLocation]:
+        return frozenset(
+            base_location
+            for base_location in self.agent.base_location_manager.base_locations
+            if Point2DI(base_location.position) in self.tiles
+        )
 
     @classmethod
-    def parse_json(cls, agent: BasicAgent, json_obj: str):
+    def parse_json(cls, agent: ImprovedAgent, json_obj: str):
         return cls(
             agent,
             {Point2DI(pos["x"], pos["y"]) for pos in json_obj["tiles"]},
@@ -40,81 +68,55 @@ class Region:
         )
 
 
-# @cache
-def get_region(agent: BasicAgent, tile_of_interest: Point2DI) -> Region:
-    """Returns the region that the tile is in."""
-    tiles = [tile_of_interest] + get_neighbours(agent, tile_of_interest)
-    for region in agent.regions:
-        if any(tile in region.tiles for tile in tiles):
+class RegionManager:
+    def __init__(self, agent: ImprovedAgent):
+        self.agent = agent
+        self.regions: set[Region] = {Region.parse_json(self.agent, data)
+                                     for data in parse_json_objects("data/regions.json")}
+        self.regions_as_centers = frozenset(region.center for region in self.regions)
+
+        self.chokepoints: frozenset[Chokepoint] = frozenset(Chokepoint.parse_json(
+            data) for data in parse_json_objects("data/chokepoints.json"))
+        self.chokepoints_as_centers = frozenset(
+            chokepoint.center for chokepoint in self.chokepoints)
+
+        # init cached:
+        _ = (self.get_region_by_center(region.center) for region in self.regions)
+
+    @cache
+    def get_region_by_center(self, pos: Point2D) -> Region:
+        return next((region for region in self.regions if region.center == pos), None)
+
+    @cache
+    def get_exact_region(self, pos: Point2DI) -> Region | None:
+        """Returns the region that the tile is in."""
+        return next((region for region in self.regions if pos in region.tiles), None)
+
+    @cache
+    def get_region(self, pos: Point2D | Point2DI) -> Region:
+        # sourcery skip: remove-unreachable-code
+        """Returns the region that the tile is in or closest to."""
+        if region := self.get_exact_region(pos.as_tile()):
             return region
+        # else
+        return self.get_region_by_center(get_closest(self.regions_as_centers, pos))
+
+        """tiles = [tile_of_interest] + get_neighbours(self.agent, tile_of_interest)
+        for region in self.agent.regions:
+            if any(tile in region.tiles for tile in tiles):
+                return region"""
 
 
-@cache
-def get_region_old(agent: BasicAgent,
-                   tile_s_of_interest: Union[Point2DI, Hashable[Iterable]]) -> Region:
-    """Returns the region that the tile is in."""
+class Chokepoint:
+    def __init__(self, tiles: set[Point2DI], center: Point2DI):
+        self.tiles: set[Point2DI] = tiles
+        self.center: set[Point2DI] = center
 
-    tiles = tile_s_of_interest if isinstance(tile_s_of_interest, Iterable) else [tile_s_of_interest]
+    @classmethod
+    def parse_json(cls, json_obj: str):
+        return cls({Point2DI(int(pos["x"]), int(pos["y"])) for pos in json_obj["tiles"]},
+                   Point2DI(int(json_obj["center"]["x"]), int(json_obj["center"]["y"])))
 
-    neighbours = get_neighbours(agent, tile_s_of_interest)
-    tiles = [tile_s_of_interest] + neighbours
-    for region in agent.regions:
-        if any(tile in region.tiles for tile in tiles):
-            return region
-
-    # if not found any; do recursive call
-    # return get_region(agent, frozenset(tile for curr_tile in tiles for tile
-    # in get_neighbours(agent, curr_tile)))
-
-
-def calc_base_locations(agent: BasicAgent, tiles: set[Point2DI]) -> list[BaseLocation]:
-    return [
-        base_location
-        for base_location in agent.base_location_manager.base_locations
-        if Point2DI(base_location.position) in tiles
-    ]
-
-
-def fix_region_border(agent: BasicAgent, border_tiles: set[Point2DI]) -> set[Point2DI]:
-    """Returns the outer border tiles of the region"""
-    tiles_to_remove = {(31, 119), (120, 48)}
-    for tile in {Point2DI(tile[0], tile[1]) for tile in tiles_to_remove}:
-        if tile in border_tiles:
-            border_tiles.remove(tile)
-    return border_tiles
-
-
-def calc_region_border(agent: BasicAgent, tiles: set[Point2DI]) -> set[Point2DI]:
-    """Calculates the outer border tiles of the region"""
-    border = set()
-    for y in range(agent.map_tools.height):
-        for x in range(agent.map_tools.width):
-            tile = Point2DI(x, y)
-            if tile not in tiles:
-                for neighbour in get_neighbours(agent, tile):
-                    if neighbour in tiles:
-                        border.add(neighbour)
-    return border
-
-
-@tuple_fromto_tile
-def calc_region_border_old(agent, tiles: set[tuple]) -> set[Point2DI]:
-    border = set()
-    for y in range(agent.map_tools.height):
-        for x in range(agent.map_tools.width):
-            tile = (x, y)
-            if tile not in tiles:  # worked when tested in jupyter
-                for neighbour in get_neighbours2(agent, tile):
-                    if neighbour in tiles:
-                        border.add(neighbour)
-    return border
-
-
-def calc_center(tiles: set[Point2DI]) -> Point2D:
-    """Calculates the center of the region"""
-    x = sum(pos.x for pos in tiles)
-    y = sum(pos.y for pos in tiles)
-    return Point2D(x / len(tiles), y / len(tiles))
 
 # ----------------- DEBUGGING ----------------- #
 

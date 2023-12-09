@@ -14,8 +14,8 @@ from queue import SimpleQueue
 class Scout(Task):
     """Task for scouting a list of bases."""
 
-    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent):
-        super().__init__(prio=prio, candidates=agent.WORKER_TYPES, agent=agent)
+    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent, **kwargs):
+        super().__init__(prio=prio, candidates=agent.WORKER_TYPES, agent=agent, **kwargs)
         self.unit_type: Optional[UnitType] = None
         self.scout_bases: SimpleQueue[Point2D] = scout_bases
         self.scout_target: Optional[Point2D] = None

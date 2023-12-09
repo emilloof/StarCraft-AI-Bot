@@ -43,7 +43,8 @@ class Task:
                  prio: int = 0,
                  candidates=None,
                  restart_on_fail=True,
-                 agent: Optional[BasicAgent] = None):
+                 agent: Optional[BasicAgent] = None,
+                 is_high_freq: bool = False):
         if candidates is None:
             candidates = set()
         self.prio: int = prio
@@ -51,6 +52,7 @@ class Task:
         self.restart_on_fail = restart_on_fail
         self.agent = agent
         self.target: Optional[Any] = None
+        self.is_high_freq: bool = is_high_freq
 
     def __repr__(self):
         return f"<{type(self).__name__}: {str(self.target) + ', ' if self.target else ''}{self.prio}>"

@@ -1,16 +1,13 @@
 from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
-from modules.extra import point2d_to_tuple
-
-from modules.potential_flow.regions import calc_center
 from library import Point2D
 from modules.potential_flow.vector import Vector
 
 from modules.py_unit import PyUnit
 
 if TYPE_CHECKING:
-    from modules.potential_flow.flow_scout import PotentialFlowScout
+    from modules.potential_flow.flow_scout import PFscout
 
 
 # Enemy potential flow
@@ -18,18 +15,22 @@ if TYPE_CHECKING:
 #        ps
 def enemy_pf(ENEMY_NEEDLE, scout_pos: Point2D, enemy: PyUnit):
     # Create a vector that represents the direction the unit is looking at
-    range_used = enemy.unit_type.attack_range # (attack_range vs sight_range)?. prob use attackrange since scv.attack_range = 0.1, but marine.attack_range = 5
+    # (attack_range vs sight_range)?. prob use attackrange since scv.attack_range = 0.1, but marine.attack_range = 5
+    range_used = enemy.unit_type.attack_range
     target_x = enemy.position.x + range_used * math.cos(enemy.facing)
     target_y = enemy.position.y + range_used * math.sin(enemy.facing)
     target = Point2D(target_x, target_y)
 
     enemy.approx_target = target
 
-    return ENEMY_NEEDLE * needle_pval(enemy.position, scout_pos, target, enemy.unit_type.attack_range * 1.0 / enemy.radius) * 2.5 # vene om ska ha 2.5 *
+    return ENEMY_NEEDLE * needle_pval(enemy.position, scout_pos, target,
+                                      enemy.unit_type.attack_range * 1.0 / enemy.radius) * 2.5  # vene om ska ha 2.5 *
 
 # Like source/sink potential but the shape change to a direction
+
+
 def needle_pval(source, point, target, bias):
-    if target == None:
+    if target is None:
         return Vector()
     x = point.x - source.x
     y = point.y - source.y
@@ -39,7 +40,7 @@ def needle_pval(source, point, target, bias):
     v = Vector(x, y)
     r = Vector(x / r2, y / r2)
 
-    if not V: # maybe should use enemy.has_target instead
+    if not V:  # maybe should use enemy.has_target instead
         return Vector()
 
     # cos(anpha)
@@ -83,20 +84,17 @@ def source_potential(source, point):
 
 # R(z) = p₁V(z) + p₂S(z) if ||z'|| > dᵣ_ₜₕᵣₑₛ
 #        p₁V(z) - p₂S(z) otherwise
-def region_pf(region_center, pos, center, scout: PotentialFlowScout, vortex_correction, source_correction, d_r_thres):
+def region_pf(region_center, pos, center, scout: PFscout,
+              vortex_correction, source_correction, d_r_thres):
     p1Vz = vortex_potential(region_center, pos) * scout.CENTER_VORTEX * vortex_correction
     p2Sz = source_potential(region_center, pos) * scout.CENTER_SOURCE_SINK * source_correction
-    if center < d_r_thres:
-        return p1Vz + p2Sz
-    else:
-        return p1Vz - p2Sz
-
+    return p1Vz + p2Sz if center < d_r_thres else p1Vz - p2Sz
 
 
 # Obstacle potential flow
 # O(z) = p₁Oᵥ(z) + p₂Oₛ(z) if ||z꜀'|| > dᵣ_ₜₕᵣₑₛ
 #        p₁Oᵥ(z) - p₂Oₛ(z) otherwise
-def obstacle_potential(scout: PotentialFlowScout, obs_pos, pos, center, a2):
+def obstacle_potential(scout: PFscout, obs_pos, pos, center, a2):
     Ov = obstacle_vortex_potential(obs_pos, pos, center, a2)
     Os = obstacle_source_potential(obs_pos, pos, center, a2)
 

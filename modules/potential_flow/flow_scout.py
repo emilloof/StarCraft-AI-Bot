@@ -4,15 +4,15 @@ from typing import TYPE_CHECKING
 from config import TIME_KEEP_ENEMY, TIME_KEEP_ENEMY_BUILDING
 from modules.extra import get_closest, get_enemy_start_pos
 
-from modules.potential_flow.regions import Region, get_region
-from modules.potential_flow.t_potential import calculate_pval
+from modules.potential_flow.regions import Region
+from modules.potential_flow.potential import calculate_pval
 from modules.potential_flow.vector import Vector
 from tasks.task import Status
 from tasks.scout import Scout
 from modules.py_unit import PyUnit
 
 if TYPE_CHECKING:
-    from agents.basic_agent import BasicAgent
+    from agents.improved_agent import ImprovedAgent
 
 from library import Point2D, Point2DI, PLAYER_ENEMY, Color, PLAYER_SELF
 from queue import SimpleQueue
@@ -24,10 +24,10 @@ show_border_p = True
 show_all_p = False
 
 
-class PotentialFlowScout(Scout):
+class PFscout(Scout):
 
-    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent):
-        super().__init__(None, prio, agent)
+    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: ImprovedAgent):
+        super().__init__(None, prio, agent, is_high_freq=True)
         # super().__init__(scout_bases, prio, agent)
         self.target_region: Region = None
         self.go = 1    # 1: proceed forward, -1: reverse direction
@@ -219,19 +219,16 @@ class PotentialFlowScout(Scout):
         print("scout_enemy_opening")
         # same val everytime (not sure if needs updating, so wont work??*)
         enemy_start_pos = get_enemy_start_pos(self.agent)
-        enemy_start_region = get_region(self.agent, enemy_start_pos.as_tile())
+        enemy_start_region = self.agent.region_manager.get_region(enemy_start_pos.as_tile())
 
-        _chokepoints = frozenset(chokepoint[1] for chokepoint in self.agent.chokepoints)
-
-        waypoint = get_closest(enemy_start_pos, _chokepoints)
-        closest_choke = get_closest(py_unit.position, _chokepoints)
-        cur_reg = get_region(self.agent, py_unit.tile_position)
-        bss = (base.position for base in self.agent.base_location_manager.base_locations
-               if not (base.is_player_start_location(PLAYER_SELF)
-                       or base.is_player_start_location(PLAYER_ENEMY)))
-        next_target_base = get_closest(enemy_start_pos, bss)
-        next_target_region = get_region(self.agent, next_target_base.as_tile())
-        if (not self.switch_region and next_target_base and closest_choke
+        waypoint = get_closest(self.agent.region_manager.chokepoints_as_centers, enemy_start_pos)
+        closest_choke = get_closest(
+            self.agent.region_manager.chokepoints_as_centers,
+            py_unit.position)
+        cur_reg = self.agent.region_manager.get_region(py_unit.position)
+        next_target_pos = get_closest(self.agent.non_start_bases_positions, enemy_start_pos)
+        next_target_region = self.agent.region_manager.get_region(next_target_pos.as_tile())
+        if (not self.switch_region and next_target_pos and closest_choke
                 and py_unit.position.distance(closest_choke) > 3):
             if cur_reg == enemy_start_region or cur_reg == next_target_region:
                 if (self.agent.current_frame > self.frame_since_switch + 16 * 40
@@ -252,7 +249,7 @@ class PotentialFlowScout(Scout):
                 self.target_region = enemy_start_region
                 self.add_attract_point(waypoint)
                 py_unit.move(enemy_start_pos)
-        elif (next_target_base and self.switch_region and closest_choke
+        elif (next_target_pos and self.switch_region and closest_choke
               and py_unit.position.square_distance(closest_choke) > 3):
             if cur_reg == enemy_start_region or cur_reg == next_target_region:
                 if (self.agent.current_frame > self.frame_since_switch + 16 * 10
@@ -272,7 +269,7 @@ class PotentialFlowScout(Scout):
                 self.target_region = next_target_region
                 self.add_attract_point(waypoint)
 
-                py_unit.move(next_target_base)
+                py_unit.move(next_target_pos)
         elif not self.switch_region:
             # If not reach, move directly to enemy base
             self.target_region = enemy_start_region
@@ -280,7 +277,7 @@ class PotentialFlowScout(Scout):
         # If not reach, move directly to next enemy base
         else:
             self.target_region = next_target_region
-            py_unit.move(next_target_base)
+            py_unit.move(next_target_pos)
 
-        if next_target_base:
-            self.agent.map_tools.draw_circle(next_target_base, 5, Color(255, 165, 0))
+        if next_target_pos:
+            self.agent.map_tools.draw_circle(next_target_pos, 5, Color(255, 165, 0))
