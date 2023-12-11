@@ -6,7 +6,7 @@ from library import Point2D, Point2DI, BaseLocation
 from modules.extra import get_neighbours, parse_json_objects, get_closest
 
 if TYPE_CHECKING:
-    from agents.improved_agent import ImprovedAgent
+    from agents.improved_agent import BasicAgent
 from functools import cached_property, cache
 
 
@@ -63,7 +63,7 @@ class Region:
         )
 
     @classmethod
-    def parse_json(cls, agent: ImprovedAgent, json_obj: str):
+    def parse_json(cls, agent: BasicAgent, json_obj: str):
         return cls(
             agent,
             {Point2DI(pos["x"], pos["y"]) for pos in json_obj["tiles"]},
@@ -72,7 +72,7 @@ class Region:
 
 
 class RegionManager:
-    def __init__(self, agent: ImprovedAgent):
+    def __init__(self, agent: BasicAgent):
         self.agent = agent
         self.regions: set[Region] = {Region.parse_json(self.agent, data)
                                      for data in parse_json_objects("data/regions.json")}

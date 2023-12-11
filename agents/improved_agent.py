@@ -3,7 +3,6 @@ from typing import Union
 import library as pycc
 from modules.build_order import BuildOrder
 from modules.potential_flow.regions import RegionManager
-from agents.basic_agent import BasicAgent
 from modules.task_manager import TaskManager
 from modules.unit_collection import UnitCollection
 from modules.py_building_placer import PyBuildingPlacer

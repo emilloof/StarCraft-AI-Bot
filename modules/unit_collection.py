@@ -102,7 +102,7 @@ class UnitCollection:
 
         # remove too old enemies
         for unit in list(self.old_enemies.keys()):
-            ic(self.old_enemies[unit])
+            # ic(self.old_enemies[unit])
             if (self.agent.current_frame - self.old_enemies[unit].last_seen > TIME_KEEP_ENEMY):
                 self.old_enemies.pop(unit)
     
