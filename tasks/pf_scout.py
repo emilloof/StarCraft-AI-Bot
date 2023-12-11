@@ -12,7 +12,7 @@ from tasks.scout import Scout
 from modules.py_unit import PyUnit
 
 if TYPE_CHECKING:
-    from agents.improved_agent import ImprovedAgent
+    from agents.basic_agent import BasicAgent
 
 from library import Point2D, Point2DI, Color
 from queue import SimpleQueue
@@ -28,7 +28,7 @@ SECOND_IN_FRAMES = 16
 
 class PFscout(Scout):
 
-    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: ImprovedAgent):
+    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent):
         super().__init__(None, prio, agent, is_high_freq=True)
         # super().__init__(scout_bases, prio, agent)
         self.target_region: Region = None

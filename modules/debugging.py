@@ -7,7 +7,7 @@ from modules.potential_flow.regions import (
 )
 
 if TYPE_CHECKING:
-    from agents.improved_agent import ImprovedAgent
+    from agents.basic_agent import BasicAgent
 
 from library import PLAYER_SELF, PLAYER_NEUTRAL, PLAYER_ENEMY, Color, Point2DI
 
@@ -20,7 +20,7 @@ def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
     return False
 
 
-def debug_regions(agent: ImprovedAgent) -> None:
+def debug_regions(agent: BasicAgent) -> None:
     regions: set[Region] = {region.tiles_as_tuples for region in agent.regions}
     rmap = regions_debug(regions)
     for region in regions:
@@ -34,7 +34,7 @@ def debug_regions(agent: ImprovedAgent) -> None:
     )
 
 
-def debug_region_borders(agent: ImprovedAgent) -> None:
+def debug_region_borders(agent: BasicAgent) -> None:
     rbmap = {}
     for color, region in enumerate(agent.regions, start=1):
         for border_tile in region.get_border():
@@ -42,7 +42,7 @@ def debug_region_borders(agent: ImprovedAgent) -> None:
     agent.debugger.set_display_values(rbmap, (agent.map_tools.width, agent.map_tools.height))
 
 
-def debug_terrain(agent: ImprovedAgent) -> None:
+def debug_terrain(agent: BasicAgent) -> None:
     tmap = {}
     for y in range(agent.map_tools.height):
         for x in range(agent.map_tools.width):
@@ -53,7 +53,7 @@ def debug_terrain(agent: ImprovedAgent) -> None:
     agent.debugger.set_display_values(tmap, (agent.map_tools.width, agent.map_tools.height))
 
 
-def path_debug(agent: ImprovedAgent) -> dict:
+def path_debug(agent: BasicAgent) -> dict:
     """Displays the map in a separate window."""
     return {
         (x, y): int(agent.map_tools.is_walkable(x, y))
@@ -62,7 +62,7 @@ def path_debug(agent: ImprovedAgent) -> dict:
     }
 
 
-def heat_map_debug(agent: ImprovedAgent) -> None:
+def heat_map_debug(agent: BasicAgent) -> None:
     """Displays the map in a separate window."""
     heat_map = [
         [int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
@@ -116,20 +116,20 @@ def up_up_down_down_left_right_left_right_b_a_start(agent: ImprovedAgent) -> Non
 # ----------------- ENEMIES ----------------- #
 
 
-def debug_enemies(agent: ImprovedAgent) -> None:
+def debug_enemies(agent: BasicAgent) -> None:
     """Draws a circle around known enemies"""
     for enemy in agent.unit_collection.get_group(PLAYER_ENEMY):
         agent.map_tools.draw_circle(enemy.position, 3, Color.RED)
 
 
-def debug_enemies_map(agent: ImprovedAgent) -> None:
+def debug_enemies_map(agent: BasicAgent) -> None:
     """Displays the known enemies"""
     return {
         enemy.position: 2 for enemy in agent.unit_collection.get_group(PLAYER_ENEMY)
     }
 
 
-def debug_enemies_text(agent: ImprovedAgent) -> None:
+def debug_enemies_text(agent: BasicAgent) -> None:
     """Displays the known enemies"""
     agent.map_tools.draw_text_screen(
         0.01,
