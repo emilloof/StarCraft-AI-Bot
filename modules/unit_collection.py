@@ -62,6 +62,7 @@ class UnitCollection:
 
         if unit_typeid_used:
             return_set = return_set.intersection(unit_type_set)
+   
 
         return return_set
 

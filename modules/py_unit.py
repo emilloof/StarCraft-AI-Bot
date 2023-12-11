@@ -24,6 +24,7 @@ class PyUnit:
         self.agent: BasicAgent = agent
         self.max_weapon_cooldown = 0
         self._last_weapon_cooldown = 0
+        self.hp = unit.hit_points
 
         self.p_value = unit.unit_type.attack_range
         # time to keep the unit in knowledge base before determined old knowledge
@@ -93,3 +94,7 @@ class PyUnit:
     def remove_group(self, key: Any) -> None:
         """Removes a group from unit's groups"""
         self.groups.remove(key)
+
+    def get_hp(self):
+        unit_hp = self.unit.hit_points
+        return unit_hp

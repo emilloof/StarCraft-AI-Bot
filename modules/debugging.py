@@ -9,7 +9,15 @@ from modules.potential_flow.regions import (
 if TYPE_CHECKING:
     from agents.improved_agent import ImprovedAgent
 
-from library import PLAYER_SELF, PLAYER_NEUTRAL, PLAYER_ENEMY
+from library import PLAYER_SELF, PLAYER_NEUTRAL, PLAYER_ENEMY, Color, Point2DI
+
+# Skapad av eriei013 för testning
+def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
+    tile = Point2DI(x, y)
+    if bottle_map[tile] == 1:
+        heat_map_row.append(2)
+        return True
+    return False
 
 
 def debug_regions(agent: ImprovedAgent) -> None:
