@@ -25,7 +25,7 @@ def debug_map(agent: BasicAgent, bottle_map: dict) -> None:
         for x in range(agent.map_tools.width):
             if int(agent.map_tools.is_walkable(x, y)):
                 b = False
-                b = print_depth(bottle_map, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #b = print_depth(bottle_map, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
                 if not b:
                     heat_map_row.append(1)
             else:

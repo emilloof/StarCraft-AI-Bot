@@ -44,8 +44,11 @@ class BasicAgent(pycc.IDABot):
         self.hp_tracker = {}
         self.strategy = Strategy
         self.bayes_model = self.strategy.create_bayes_model(self)
-        self.curr_strategy = ''
+        self.curr_strategy = {}
+        self.curr_stratstr = ''
         self.time = 0
+        self.last_hp_diff = 0
+        
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
@@ -56,6 +59,8 @@ class BasicAgent(pycc.IDABot):
         }
         self.WORKER_TYPES = set()
         self.COMBAT_TYPES = set()
+
+       
 
        
 
@@ -73,9 +78,6 @@ class BasicAgent(pycc.IDABot):
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
-        map = bottle.get_list_of_bottlenecks(self)
-        #bottle.get_offset_coords(Point2DI(2, 2), 2)
-
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
@@ -91,6 +93,7 @@ class BasicAgent(pycc.IDABot):
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
+        
         pycc.IDABot.on_step(self)
 
         if self.current_frame % FRAME_SKIP == 1:
@@ -120,23 +123,28 @@ class BasicAgent(pycc.IDABot):
         
         # David
         self.time += 1
+        # Only run the strategy decider every 100 tick
+        # 675 tick equals roughly 30 sec 
         if self.time % 100 == 0:
-            print("time: ", self.time)
-            self.curr_strategy, self.hp_tracker = self.strategy.choose_strategy(self,
+            #print("time: ", self.time)
+        
+            self.curr_strategy, self.curr_stratstr, self.hp_tracker, self.last_hp_diff = self.strategy.choose_strategy(self,
                                                                                 self.strategy,
                                                                                 self.bayes_model, 
                                                                                 self.hp_tracker, 
                                                                                 self.strategy.get_hit_points(self), 
-                                                                                self.internal_minerals)
+                                                                                self.internal_minerals, 
+                                                                                self.time,
+                                                                                self.last_hp_diff)
             
-            print("best strat: ", self.curr_strategy)
-        #exit()
+            print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
+            #exit()
 
         if DEBUG_UNIT:
             debug.debug_units(self)
         if DEBUG_TEXT:
             debug.debug_text(self)
-
+    
     def set_up_debugging(self) -> None:
         """Set up visual debugger"""
         self.debugger.tile_margin = 1
@@ -147,6 +155,8 @@ class BasicAgent(pycc.IDABot):
             (2, 2): (0, 255, 0)
         }
         self.debugger.set_color_map(color_map)
+
+    
 
     def can_afford(self, unit_type: Union[pycc.UnitType, pycc.UPGRADE_ID]) -> bool:
         """
