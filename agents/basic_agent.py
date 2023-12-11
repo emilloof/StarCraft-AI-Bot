@@ -12,7 +12,6 @@ from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UN
 from modules.extra import unit_types_by_condition
 
 
-
 # David
 from strategy import Strategy
 
@@ -63,6 +62,8 @@ class BasicAgent(pycc.IDABot):
 
        
 
+       
+
         if DEBUG_VISUAL:
             self.debugger = HeatMapDebugger()
 
@@ -84,7 +85,12 @@ class BasicAgent(pycc.IDABot):
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
         
-    
+<<<<<<< agents/basic_agent.py
+
+        
+=======
+>>>>>>> agents/basic_agent.py
+
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
         
