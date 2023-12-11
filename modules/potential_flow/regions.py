@@ -6,7 +6,7 @@ from library import Point2D, Point2DI, BaseLocation
 from modules.extra import get_neighbours, parse_json_objects, get_closest
 
 if TYPE_CHECKING:
-    from agents.improved_agent import BasicAgent
+    from agents.basic_agent import BasicAgent
 from functools import cached_property, cache
 
 

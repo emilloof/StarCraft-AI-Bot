@@ -7,7 +7,7 @@ from modules.potential_flow.regions import (
 )
 
 if TYPE_CHECKING:
-    from agents.improved_agent import BasicAgent
+    from agents.basic_agent import BasicAgent
 
 from library import PLAYER_SELF, PLAYER_NEUTRAL, PLAYER_ENEMY, Color, Point2DI
 
@@ -71,7 +71,7 @@ def heat_map_debug(agent: BasicAgent) -> None:
     agent.debugger.set_display_values(heat_map)
 
 
-def debug_text(agent: BasicAgent) -> None:
+def debug_text(agent: ImprovedAgent) -> None:
     """Displays text on screen with information about build order and tasks."""
     agent.map_tools.draw_text_screen(0.01, 0.01, f"Build order: {agent.build_order}")
     agent.map_tools.draw_text_screen(0.01, 0.03, "Task queue:\n{}".format(
@@ -82,7 +82,7 @@ def debug_text(agent: BasicAgent) -> None:
         "\n".join([f"{k} x{v}" for k, v in current_tasks_count.items()])),)
 
 
-def debug_units(agent: BasicAgent) -> None:
+def debug_units(agent: ImprovedAgent) -> None:
     """
     Displays unit information on screen:
         Unit type
@@ -105,7 +105,7 @@ def debug_units(agent: BasicAgent) -> None:
             f"Minerals left: {mineral.minerals_left_in_mineralfield}",)
 
 
-def up_up_down_down_left_right_left_right_b_a_start(agent: BasicAgent) -> None:
+def up_up_down_down_left_right_left_right_b_a_start(agent: ImprovedAgent) -> None:
     """Gives resources and allows fast building, good for testing."""
     agent.debug_fast_build()
     agent.debug_give_all_resources()
