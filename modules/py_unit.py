@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
+
 if TYPE_CHECKING:
     from tasks.task import Task
     from library import Unit
@@ -20,9 +21,10 @@ class PyUnit:
         self.task: Task = Idle()
         self.groups = set()
         self.agent: BasicAgent = agent
-        self.max_weapon_cooldown = 0
+        self.max_weapon_cooldown = PyUnit.unit_cooldowns.get(unit.unit_type.name)
         self._last_weapon_cooldown = 0
         self.hp = unit.hit_points
+        self.kite = False
 
     def __repr__(self):
         return f"<PyUnit: {self.unit_type.name}, {self.id}>"
@@ -68,3 +70,27 @@ class PyUnit:
     def remove_group(self, key: Any) -> None:
         """Removes a group from unit's groups"""
         self.groups.remove(key)
+
+    def clone(self):
+        return PyUnit(self.unit, self.agent)
+
+    #List of all cooldown for each units. Used in init for each pyunit.
+    unit_cooldowns = {
+        'TERRAN_MARINE': 0.86,
+        "TERRAN_SIEGETANK": 3.04,
+        "PROTOSS_ZEALOT": 0.86,
+        "ZERG_ZERGLING": 0.696,
+        "PROTOSS_STALKER": 1.44,
+        "ZERG_ROACH": 2.2,
+        "TERRAN_HELLION": 1.43,
+        "TERRAN_HELLBAT": 1.43,
+        "PROTOSS_IMMORTAL": 1.45,
+        "PROTOSS_VOIDRAY": 0.36,
+        "PROTOSS_COLOSSUS": 2.21,
+        "PROTOSS_HIGHTEMPLAR": 0.001,  # High Templar's Feedback has no cooldown
+        "TERRAN_REAPER": 1.5,
+        "TERRAN_BATTLECRUISER": 0.23,
+        "ZERG_MUTALISK": 0.56,
+        "ZERG_ULTRALISK": 0.497,
+        "TERRAN_BANSHEE": 0.8
+    }
