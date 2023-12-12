@@ -116,7 +116,9 @@ class BasicAgent(pycc.IDABot):
         # sets the colormap for the debugger {(interval): (r, g, b)}
         color_map = {
             (0, 0): (0, 0, 0,),
-            (1, 1): (255, 255, 255)
+            (1, 1): (255, 255, 255),
+            (2, 2): (255, 0, 0),
+            (3, 3): (0, 255, 0)
         }
         self.debugger.set_color_map(color_map)
 

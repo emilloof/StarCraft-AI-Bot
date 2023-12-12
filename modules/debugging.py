@@ -1,16 +1,29 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+#from lpa_star import used_tiles
 
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
 from library import PLAYER_SELF, PLAYER_NEUTRAL
 
-
 def debug_map(agent: BasicAgent) -> None:
     """Displays the map in a separate window."""
-    heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
-                for y in range(agent.map_tools.height)]
+    '''heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
+                for y in range(agent.map_tools.height)]'''
+    heat_map = []
+    for y in range(agent.map_tools.height):
+        row = []
+        for x in range(agent.map_tools.width):
+            if agent.map_tools.is_walkable(x, y):
+                row.append(1)
+            #elif(debugLPAMap(agent, row, x, y)):
+              #  row.append(2)
+            elif((x,y) == (50, 50)):
+                row.append(3)
+            else: 
+                row.append(0)
+        heat_map.append(row)
     agent.debugger.set_display_values(heat_map)
 
 

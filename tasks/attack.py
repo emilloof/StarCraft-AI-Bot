@@ -24,6 +24,7 @@ class Attack(Task):
 
         :return: Status.DONE if the task was started, Status.FAIL if task target is not Point2D.
         """
+        print("attack started")
         # Target is a coordinate
         if isinstance(self.target, Point2D):
             py_unit.attack_move(self.target)
