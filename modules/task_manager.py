@@ -1,5 +1,7 @@
+# sourcery-ignore
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Type, Union, Optional
+from tasks.pf_scout import PFscout
 
 if TYPE_CHECKING:
     from tasks.task import Task
@@ -50,10 +52,11 @@ class TaskCollection:
         """
         return_set = self.tasks.intersection(
             {task for task in self.tasks if isinstance(task, task_type)}).intersection(
-            {task for task in self.tasks if type(task.target) == type(target) and task.target == target})
+            {task for task in self.tasks if isinstance(task.target, type(target)) and task.target == target})
 
         for unit_type in unit_types:
-            return_set = return_set.intersection({task for task in self.tasks if unit_type in task.candidates})
+            return_set = return_set.intersection(
+                {task for task in self.tasks if unit_type in task.candidates})
 
         return return_set
 
@@ -97,13 +100,19 @@ class TaskManager:
         self.generate_tasks()
         self.distribute_tasks()
 
+    def on_step_every_frame(self) -> None:
+        """
+        Handles all tasks for current step that need to be performed every frame.
+        """
+        self.perform_important_tasks()
+
     def generate_tasks(self) -> None:
         """Generates all tasks that need to be preformed by the bot."""
         self.gather()
         self.build()
         self.attack()
         if self.agent.current_frame == 1:
-            self.scout()
+            self.improved_scout()  # self.scout()
 
     def gather(self) -> None:
         """
@@ -118,17 +127,19 @@ class TaskManager:
                 # This base is occupied by an indicator or an incomplete townhall
                 break
 
-            minerals = [mineral for mineral in base.minerals if mineral.minerals_left_in_mineralfield > 0]
-            diff = len(minerals) * 2 - len(self.agent.unit_collection.get_group(base, *worker_types)) - len(
-                self.task_queue.get_tasks(GatherMinerals, base, *worker_types))
+            minerals = [mineral for mineral in base.minerals
+                        if mineral.minerals_left_in_mineralfield > 0]
+            diff = len(minerals) * 2 - len(self.agent.unit_collection.get_group(base, *worker_types)
+                                           ) - len(self.task_queue.get_tasks(GatherMinerals, base, *worker_types))
             if diff > 0:
                 for i in range(0, diff):
                     self.task_queue.add(GatherMinerals(base, RESOURCE_PRIO, self.agent))
             elif diff < 0:
                 # TODO: Remove gather task from excessive workers
                 pass
-            refineries = self.agent.unit_collection.get_group(base, PLAYER_SELF, lambda
-                u: u.unit_type.is_refinery and u.is_completed and u.gas_left_in_refinery > 0)
+            refineries = self.agent.unit_collection.get_group(
+                base, PLAYER_SELF,
+                lambda u: u.unit_type.is_refinery and u.is_completed and u.gas_left_in_refinery > 0)
             for refinery in refineries:
                 workers_in_refinery = self.agent.unit_collection.get_group(refinery)
                 diff = 3 - len(workers_in_refinery) - len(
@@ -148,7 +159,9 @@ class TaskManager:
         """
         to_build = self.agent.build_order.peek()
         if to_build is not None:
-            type_to_build = UnitType(to_build, self.agent) if isinstance(to_build, UNIT_TYPEID) else to_build
+            type_to_build = UnitType(
+                to_build, self.agent) if isinstance(
+                to_build, UNIT_TYPEID) else to_build
             if self.can_produce(type_to_build):
                 # We can build this now!
                 production_task = self.get_production_task(type_to_build)
@@ -159,20 +172,24 @@ class TaskManager:
         # Build order empty, or we can't produce next building,
         # let's build workers for now instead.
         type_to_build = get_worker_type(self.agent)
-        workers_needed = len([t for t in self.task_queue if type_to_build.unit_typeid in t.candidates])
+        workers_needed = len(
+            [t for t in self.task_queue if type_to_build.unit_typeid in t.candidates])
         if workers_needed:
             # Only build workers if we need them for tasks
             producer_types = self.agent.tech_tree.get_data(type_to_build).what_builds
             producer_type_ids = {prod.unit_typeid for prod in producer_types}
-            producers = self.agent.unit_collection.get_group(PLAYER_SELF, lambda
-                u: u.unit_type.unit_typeid in producer_type_ids and isinstance(u.task, Idle))
+            producers = self.agent.unit_collection.get_group(
+                PLAYER_SELF, lambda u: u.unit_type.unit_typeid
+                in producer_type_ids and isinstance(u.task, Idle))
             queued = self.task_queue.get_tasks(Train, type_to_build)
             for _ in range(len(producers) - len(queued)):
                 self.task_queue.add(Train(type_to_build, WORKER_PRIO, self.agent))
 
     def can_produce(self, type_to_build: Union[UnitType, UPGRADE_ID]) -> bool:
         """Returns whether we have the required units/upgrades to produce a type."""
-        return exists_producer_for(self.agent, type_to_build) and has_prerequisites(self.agent, type_to_build)
+        return exists_producer_for(
+            self.agent, type_to_build) and has_prerequisites(
+            self.agent, type_to_build)
 
     def get_production_task(self, type_to_build: Union[UnitType, UPGRADE_ID]) -> Optional[Task]:
         """Returns a task that can create/upgrade the unit/upgrade type."""
@@ -188,35 +205,46 @@ class TaskManager:
         if type_to_build.get_equivalent_units:
             return Morph(type_to_build, UPGRADE_PRIO, self.agent)
 
-        pos = self.agent.py_building_placer.find_position(type_to_build)
-        if pos:
+        if pos := self.agent.py_building_placer.find_position(type_to_build):
             return Build(type_to_build, pos, BUILDING_PRIO, self.agent)
 
         return None
 
     def attack(self) -> None:
         """Generates attack tasks targeting the enemy starting base for every combat unit."""
-        pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
+        pos = self.agent.base_location_manager.get_player_starting_base_location(
+            PLAYER_ENEMY).position
 
-        if self.task_queue.is_empty() and self.agent.build_order.is_empty() and\
-                self.agent.current_frame > 10 and self.agent.current_frame - self.have_attacked > 1000 :
+        if self.task_queue.is_empty() and self.agent.build_order.is_empty(
+        ) and self.agent.current_frame > 10 and self.agent.current_frame - self.have_attacked > 1000:
             self.have_attacked = self.agent.current_frame
-            py_units = self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.is_combat_unit, Idle)
+            py_units = self.agent.unit_collection.get_group(
+                PLAYER_SELF, lambda u: u.unit_type.is_combat_unit, Idle)
             for i in range(0, len(py_units)):
                 self.task_queue.add(Attack(pos, ATTACK_PRIO, self.agent))
 
+    def improved_scout(self) -> None:
+        self.task_queue.add(PFscout(None, SCOUT_PRIO, self.agent))
+
+    # UNUSED
     def scout(self) -> None:
         """
         Finds the two closest bases to the enemy's starting location and creates a task to scout these bases and the
-        staring base of the opponent.
+        starting base of the opponent.
         """
         # Scout, compiles a list over bases to scout
-        enemy_base_pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
-        # Getting a complete list of all base positions, but removing PLAYER_SELF and PLAYER_ENEMY starting bases.
-        bases_pos = [base.position for base in self.agent.base_location_manager.base_locations if
-                     not (base.is_player_start_location(PLAYER_SELF) or base.is_player_start_location(PLAYER_ENEMY))]
-        # Calculating distance from PLAYER_ENEMY starting base location to all other potential bases.
-        bases_pos.sort(key=lambda p: int(self.agent.map_tools.get_ground_distance(enemy_base_pos, p)))
+        enemy_base_pos = self.agent.base_location_manager.get_player_starting_base_location(
+            PLAYER_ENEMY).position
+        # Getting a complete list of all base positions, but removing PLAYER_SELF
+        # and PLAYER_ENEMY starting bases.
+        bases_pos = [base.position for base in self.agent.base_location_manager.base_locations if not (
+            base.is_player_start_location(PLAYER_SELF) or base.is_player_start_location(PLAYER_ENEMY))]
+        # Calculating distance from PLAYER_ENEMY starting base location to all
+        # other potential bases.
+        bases_pos.sort(
+            key=lambda p: int(
+                self.agent.map_tools.get_ground_distance(
+                    enemy_base_pos, p)))
 
         scout_bases = SimpleQueue()
         # Add the two bases closest to the enemy base, with the furthest added first
@@ -228,25 +256,36 @@ class TaskManager:
         new_task = Scout(scout_bases, SCOUT_PRIO, self.agent)
         self.task_queue.add(new_task)
 
+    def perform_task(self, py_unit: PyUnit) -> None:
+        def add_idle_task():
+            idle_task = Idle()
+            py_unit.give_task(idle_task)
+            self.current_tasks.add(idle_task)
+
+        status: Status = py_unit.on_step()
+        if status == Status.DONE:
+            self.current_tasks.remove(py_unit.task)
+            add_idle_task()
+        elif status == Status.NOT_DONE:
+            pass
+        elif status.is_fail():
+            self.current_tasks.remove(py_unit.task)
+            if py_unit.task.restart_on_fail:
+                self.task_queue.add(py_unit.task)
+            if py_unit.is_alive:
+                add_idle_task()
+
     def perform_tasks(self) -> None:
         """Calls every unit's on_step and handles if the task of the unit is done, not done, or failed."""
         for py_unit in self.agent.unit_collection.get_group(PLAYER_SELF):
-            status: Status = py_unit.on_step()
-            if status == Status.DONE:
-                self.current_tasks.remove(py_unit.task)
-                idle_task = Idle()
-                py_unit.give_task(idle_task)
-                self.current_tasks.add(idle_task)
-            elif status == Status.NOT_DONE:
-                pass
-            elif status.is_fail():
-                self.current_tasks.remove(py_unit.task)
-                if py_unit.task.restart_on_fail:
-                    self.task_queue.add(py_unit.task)
-                if py_unit.is_alive:
-                    idle_task = Idle()
-                    py_unit.give_task(idle_task)
-                    self.current_tasks.add(idle_task)
+            self.perform_task(py_unit)
+
+    def perform_important_tasks(self) -> None:
+        """Calls important units tasks on_step (i.e. scout)"""
+        for py_unit in self.agent.unit_collection.get_group(
+                PLAYER_SELF, lambda u: u.task.is_high_freq):
+            # maybe just use: return scout_py_unit *?
+            self.perform_task(py_unit)
 
     def distribute_tasks(self) -> None:
         """
@@ -260,10 +299,15 @@ class TaskManager:
             if (str(task)) in checked_tasks:
                 continue
 
-            py_units = self.agent.unit_collection.get_group(PLAYER_SELF, lambda
-                u: u.is_completed and u.task.prio > task.prio and u.is_alive and u.unit_type.unit_typeid in task.candidates)
-            py_units = sorted(py_units, key=lambda u: (
-                -u.task.prio, u.position.square_distance(u.task.target_position) if u.task.target_position else 0))
+            py_units = self.agent.unit_collection.get_group(
+                PLAYER_SELF, lambda u: u.is_completed and u.task.prio > task.
+                prio and u.is_alive and u.unit_type.unit_typeid in task.candidates)
+            py_units = sorted(
+                py_units,
+                key=lambda u: (
+                    -u.task.prio,
+                    u.position.square_distance(
+                        u.task.target_position) if u.task.target_position else 0))
 
             task_started = False
             for py_unit in py_units:

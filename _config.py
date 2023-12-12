@@ -17,9 +17,14 @@ DEBUG_TEXT = False
 DEBUG_UNIT = False
 # Enable visual debugger
 DEBUG_VISUAL = True
+# Enable scout debugger
+DEBUG_SCOUT = True
 
 # How many frames between actions
 FRAME_SKIP = 10
+
+# How many frames until we invalidate cache
+FRAME_CLEAR_CACHE = 10
 
 # Path to build order
 BUILD_ORDER_PATH = "builds/labs_build_order"

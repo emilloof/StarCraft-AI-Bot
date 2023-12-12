@@ -1,16 +1,20 @@
+from functools import cached_property
 from typing import Union
 import library as pycc
-from modules.build_order import BuildOrder
-from modules.task_manager import TaskManager
-from modules.unit_collection import UnitCollection
-from modules.py_building_placer import PyBuildingPlacer
-from modules import debugging as debug
-from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
-    BUILD_ORDER_PATH
+from modules import BuildOrder, RegionManager, TaskManager, UnitCollection, PyBuildingPlacer, debugging as debug
 from modules.extra import unit_types_by_condition
+from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_ENEMIES, DEBUG_LOGS, DEBUG_TEXT, \
+    DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, BUILD_ORDER_PATH, FRAME_CLEAR_CACHE
+
+
+# David
+from strategy import Strategy
+
+from icecream import install
+install()
 
 if DEBUG_VISUAL:
-    from visualdebugger.heat_map_debugger import HeatMapDebugger
+    from visualdebugger import HeatMapDebugger, PathDebugger
 
 if DEBUG_LOGS:
     from modules.tictoc import TicToc
@@ -30,6 +34,19 @@ class BasicAgent(pycc.IDABot):
         self.internal_minerals = 0
         self.internal_supply = 0
 
+        # David
+        self.hp_tracker = {}
+        self.strategy = Strategy
+        self.bayes_model = self.strategy.create_bayes_model(self)
+        self.curr_strategy = {}
+        self.curr_stratstr = ''
+        self.last_hp_diff = 0
+
+        # Vincent
+        self.clear_cache_frame = 0
+        self.region_manager: RegionManager = RegionManager(self)
+        self.cache_functions: set[callable] = set()
+
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
             pycc.UNIT_TYPEID.TERRAN_ORBITALCOMMAND: (150, 0),
@@ -41,11 +58,20 @@ class BasicAgent(pycc.IDABot):
         self.COMBAT_TYPES = set()
 
         if DEBUG_VISUAL:
-            self.debugger = HeatMapDebugger()
+            self.debugger: Union[HeatMapDebugger, PathDebugger] = HeatMapDebugger()
 
         if DEBUG_LOGS:
             self.timer = TicToc(prints=DEBUG_CONSOLE)
             self.logger = Logger()
+
+    @cached_property
+    def non_start_bases_positions(self) -> frozenset:
+        return frozenset(base.position
+                         for base in self.base_location_manager.base_locations if (
+                             not (
+                                 base.is_player_start_location(pycc.PLAYER_SELF)
+                                 or base.is_player_start_location(pycc.PLAYER_ENEMY)))
+                         )
 
     def on_game_start(self) -> None:
         """Runs on game start. Loads necessary data and generates settings"""
@@ -53,6 +79,7 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
+
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
@@ -61,7 +88,9 @@ class BasicAgent(pycc.IDABot):
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
 
     def on_step(self) -> None:
-        """Runs on every step and runs IDABot.on_step. Updates variables, reassigns units, updates debug info."""
+        """Runs on every step and runs IDABot.on_step.
+        Updates variables, reassigns units, updates debug info."""
+
         pycc.IDABot.on_step(self)
 
         if self.current_frame % FRAME_SKIP == 1:
@@ -76,10 +105,14 @@ class BasicAgent(pycc.IDABot):
             self.unit_collection.on_step()
 
         if self.current_frame % FRAME_SKIP == 1:
-            new_units = [u for u in self.unit_collection.new_units_this_step if u.player == pycc.PLAYER_SELF]
+            new_units = [
+                u for u in self.unit_collection.new_units_this_step
+                if u.player == pycc.PLAYER_SELF]
             self.task_manager.on_step(new_units)
 
             self.unit_collection.remove_dead_units()
+        else:
+            self.task_manager.on_step_every_frame()
 
         if self.current_frame % FRAME_SKIP == 1 and DEBUG_LOGS:
             self.timer.toc()
@@ -89,10 +122,42 @@ class BasicAgent(pycc.IDABot):
                 self.logger.add(key, val)
             self.timer.reset()
 
+        # David
+        # Only run the strategy decider every 100 tick
+        # 675 tick equals roughly 30 sec
+        if self.current_frame % 100 == 0:
+            # print("time: ", self.time)
+            self.curr_strategy, self.curr_stratstr, self.hp_tracker, self.last_hp_diff = self.strategy.choose_strategy(self,
+                                                                                                                       self.strategy,
+                                                                                                                       self.bayes_model,
+                                                                                                                       self.hp_tracker,
+                                                                                                                       self.strategy.get_hit_points(self),
+                                                                                                                       self.internal_minerals,
+                                                                                                                       self.current_frame,
+                                                                                                                       self.last_hp_diff)
+
+            print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
+            # exit()
+
         if DEBUG_UNIT:
             debug.debug_units(self)
         if DEBUG_TEXT:
             debug.debug_text(self)
+        if DEBUG_ENEMIES:
+            debug.debug_enemies(self)
+            debug.debug_enemies_text(self)
+        if DEBUG_VISUAL:
+            self.debugger.on_step()
+            self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
+
+        if self.current_frame - self.clear_cache_frame >= FRAME_CLEAR_CACHE:
+            self.clear_cache_frame = self.current_frame
+            for func in self.cache_functions:
+                if callable(func):  # hasattr(func, "cache_clear"):
+                    func.cache_clear()
+                else:
+                    del func
+            del self.non_start_bases_positions
 
     def set_up_debugging(self) -> None:
         """Set up visual debugger"""
@@ -100,7 +165,22 @@ class BasicAgent(pycc.IDABot):
         # sets the colormap for the debugger {(interval): (r, g, b)}
         color_map = {
             (0, 0): (0, 0, 0,),
-            (1, 1): (255, 255, 255)
+            (1, 1): (255, 255, 255),
+            (2, 2): (0, 255, 0),
+            (3, 3): (255, 0, 0),
+            (4, 4): (0, 0, 255),
+            (5, 5): (255, 255, 0),
+            (6, 6): (255, 0, 255),
+            (7, 7): (0, 255, 255),
+            (8, 8): (100, 100, 0),
+            (9, 9): (0, 100, 100),
+            (10, 10): (100, 0, 100),
+            (11, 11): (100, 100, 255),
+            (12, 12): (100, 255, 100),
+            (13, 13): (255, 100, 100),
+            (14, 14): (255, 150, 100),
+
+            (15, 15): (100, 100, 100)
         }
         self.debugger.set_color_map(color_map)
 
