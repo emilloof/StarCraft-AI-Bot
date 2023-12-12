@@ -3,6 +3,7 @@ from typing import Union
 import library as pycc
 from modules import BuildOrder, RegionManager, TaskManager, UnitCollection, PyBuildingPlacer, debugging as debug
 from modules.extra import unit_types_by_condition
+import bottlenecks as bottle    # Erik
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_ENEMIES, DEBUG_LOGS, DEBUG_TEXT, \
     DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, BUILD_ORDER_PATH, FRAME_CLEAR_CACHE
 
@@ -79,11 +80,14 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
-
+       
+        start_base_pos = self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF).position
+        self.BOTTLENECKS = bottle.get_bottlenecks(self, start_base_pos)  # ERIk
+        
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self))
+            self.debugger.on_step(lambda: debug.debug_map(self))  
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
 
@@ -92,6 +96,21 @@ class BasicAgent(pycc.IDABot):
         Updates variables, reassigns units, updates debug info."""
 
         pycc.IDABot.on_step(self)
+
+        for bott in self.BOTTLENECKS: # ERIK
+            for tile in bott:
+                self.map_tools.draw_tile(tile, pycc.Color.BLUE)
+
+        all_friendly = set(u for u in self.unit_collection.py_units.values() if u.player == pycc.PLAYER_SELF)
+        all_supply_depots = {py_unit for py_unit in all_friendly if py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOT or py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOTLOWERED}
+        all_friendly_units = {py_unit for py_unit in all_friendly if py_unit.unit_type.is_worker or py_unit.unit_type.is_combat_unit}
+        for supply_depot in all_supply_depots:
+            is_friendly_unit_nearby = any(bottle.distance_between_tiles(supply_depot.tile_position, unit.tile_position) < 3
+                                   for unit in all_friendly_units)
+            if is_friendly_unit_nearby:
+                supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_LOWER)
+            else:
+                supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_RAISE)
 
         if self.current_frame % FRAME_SKIP == 1:
             if DEBUG_LOGS:
