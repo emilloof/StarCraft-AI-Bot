@@ -19,7 +19,6 @@ class Attack(Task):
         self.target = pos
         self.previous_pos: Optional[Point2D] = None
         self.fails: int = 0
-        self.agent = agent
 
     def on_start(self, py_unit: PyUnit) -> Status:
         """
@@ -27,6 +26,7 @@ class Attack(Task):
 
         :return: Status.DONE if the task was started, Status.FAIL if task target is not Point2D.
         """
+        print("attack started")
         # Target is a coordinate
         if isinstance(self.target, Point2D):
             py_unit.move(self.target)

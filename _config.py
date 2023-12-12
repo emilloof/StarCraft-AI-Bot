@@ -21,6 +21,8 @@ DEBUG_VISUAL = False
 DEBUG_SCOUT = True
 # Use eriks chokepoints
 USE_CHOKES = False
+# Use Hannes pathfinding
+USE_MOVE = False
 
 # Enable debugging (showing list of) enemies
 DEBUG_ENEMIES = False
