@@ -15,7 +15,7 @@ class Attack(Task):
     """Task for attacking a position."""
 
     def __init__(self, pos: Point2D, prio: int, agent: BasicAgent):
-        super().__init__(prio=prio, candidates=agent.COMBAT_TYPES)
+        super().__init__(prio=prio, candidates=agent.COMBAT_TYPES, agent=agent)
         self.target = pos
         self.previous_pos: Optional[Point2D] = None
         self.fails: int = 0

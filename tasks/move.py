@@ -53,7 +53,7 @@ class Move(Task):
             return Status.FAIL
 
         initial_key_value = calculateKey(vertexes, start_position, target_position)
-        priority_queue.put((initial_key_value, start_positions))
+        priority_queue.put((initial_key_value, start_position))
         # secondary_queue.append((initial_key_value, start_position))
         path = computeShortestPath(priority_queue, secondary_queue, vertexes, start_position, target_position)
         print("PATH_ ", path)

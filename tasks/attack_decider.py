@@ -31,6 +31,7 @@ class Situation:
     def __init__(self, agent, unit=None, player=None, move=None):
         self.U1 = set()
         self.U2 = set()
+        self.agent = agent
         self.time = agent.current_frame
         self.player = player
         self.script = move

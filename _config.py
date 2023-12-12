@@ -20,7 +20,7 @@ DEBUG_VISUAL = False
 # Enable scout debugger
 DEBUG_SCOUT = True
 # Use eriks chokepoints
-USE_CHOKES = False
+USE_CHOKES = True
 # Use Hannes pathfinding
 USE_MOVE = False
 
