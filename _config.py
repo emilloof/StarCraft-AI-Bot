@@ -5,7 +5,7 @@ SC2_PATH = r"<path>\StarCraft II\Versions\Base<version_number>\SC2_x64.exe"
 MAPS = ["InterloperTest.SC2Map"]
 
 # Give resources and allows fast building, good for testing
-DEBUG_CHEATS = False
+DEBUG_CHEATS = True
 # Debug prints to console
 DEBUG_CONSOLE = False
 # Log information such as computation time per step
@@ -16,9 +16,15 @@ DEBUG_TEXT = False
 # Units information displayed on screen
 DEBUG_UNIT = False
 # Enable visual debugger
-DEBUG_VISUAL = True
+DEBUG_VISUAL = False
 # Enable scout debugger
 DEBUG_SCOUT = True
+
+# Enable debugging (showing list of) enemies
+DEBUG_ENEMIES = False
+
+TIME_KEEP_ENEMY = 300
+TIME_KEEP_ENEMY_BUILDING = 600
 
 # How many frames between actions
 FRAME_SKIP = 10
