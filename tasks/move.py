@@ -9,10 +9,10 @@ from library import Point2D
 from tasks.task import Task, Status
 
 #added by hanlu520
-from custom_priority_queue import CustomPriorityQueue
-from vertex import Vertex
+from modules.path_finding.custom_priority_queue import CustomPriorityQueue
+from modules.path_finding.vertex import Vertex
+from modules.path_finding.lpa_star import *
 import copy
-from lpa_star import *
 
 
 class Move(Task):
@@ -53,7 +53,8 @@ class Move(Task):
             return Status.FAIL
 
         initial_key_value = calculateKey(vertexes, start_position, target_position)
-        priority_queue.put((initial_key_value, start_position)), secondary_queue.append((initial_key_value, start_position))
+        priority_queue.put((initial_key_value, start_positions))
+        # secondary_queue.append((initial_key_value, start_position))
         path = computeShortestPath(priority_queue, secondary_queue, vertexes, start_position, target_position)
         print("PATH_ ", path)
 

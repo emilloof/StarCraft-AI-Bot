@@ -1,7 +1,7 @@
 from library import Point2D
 from modules.py_unit import PyUnit
-from vertex import Vertex
-from custom_priority_queue import CustomPriorityQueue
+from modules.path_finding.vertex import Vertex
+from modules.path_finding.custom_priority_queue import CustomPriorityQueue
 import copy
 import math
 
@@ -28,6 +28,7 @@ def calculateHeuristic(first_vertex: Vertex, second_vertex: Vertex):
     Vertex.distance = lambda self, other: math.sqrt((self.position_x - other.position_x)**2 + (self.position_y - other.position_y)**2)
     return first_vertex.distance(second_vertex)
 
+
 def calculateKey(vertexes: dict, current_point: (int, int), goal_point: (int, int)):
     kv_0 = min(vertexes[current_point].g_value, vertexes[current_point].rhs_value) + calculateHeuristic(vertexes[current_point], vertexes[goal_point])
     kv_1 = min(vertexes[current_point].g_value, vertexes[current_point].rhs_value)
@@ -42,13 +43,15 @@ def updateVertex(priority_queue : CustomPriorityQueue, secondary_queue : list, v
                 if(neighbour_value < lowest_value):
                     lowest_value = neighbour_value
             vertexes[current_point].rhs_value = lowest_value
-        if((calculateKey(vertexes, current_point, goal_point), current_point) in secondary_queue):
-            secondary_queue.remove((calculateKey(vertexes, current_point, goal_point), current_point))
         if(vertexes[current_point].g_value != vertexes[current_point].rhs_value):
+            # curr_point = (5, 5)
+            # start_point = (1, 2)
+            # goal_point = (10, 10)
 
+            priority_queue.update((calculateKey(vertexes, current_point, goal_point), current_point))
+            # ((15, 0), vertex.point)
 
-            priority_queue.put((calculateKey(vertexes, current_point, goal_point), current_point))
-            secondary_queue.append((calculateKey(vertexes, current_point, goal_point), current_point))
+            
 
 
 def computeShortestPath(priority_queue : CustomPriorityQueue, secondary_queue: list, vertexes : dict, start_point : (int, int), goal_point : (int, int)):
@@ -62,17 +65,18 @@ def computeShortestPath(priority_queue : CustomPriorityQueue, secondary_queue: l
             
             
             #print("top_point", top_point)
-            while(True):
+            
+            """while(True):
                 print("i true loopen")
                 if(priority_queue.peek() not in secondary_queue):
                     priority_queue.get()
                 else:
-                    break
+                    break"""
             
             top_element = priority_queue.get()
             top_key = top_element[0]
             top_point = top_element[1]
-            secondary_queue.remove((top_key, top_point))
+            #secondary_queue.remove((top_key, top_point))
             
             
             vertexes[parent_point].child = vertexes[top_point]

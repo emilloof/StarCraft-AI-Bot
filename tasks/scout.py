@@ -9,14 +9,11 @@ if TYPE_CHECKING:
 from library import UnitType, Point2D
 from tasks.task import Task, Status
 from queue import SimpleQueue
-import dlite
-import lpa_star
-
 class Scout(Task):
     """Task for scouting a list of bases."""
 
-    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent):
-        super().__init__(prio=prio, candidates=agent.WORKER_TYPES)
+    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent, **kwargs):
+        super().__init__(prio=prio, candidates=agent.WORKER_TYPES, agent=agent, **kwargs)
         self.unit_type: Optional[UnitType] = None
         self.scout_bases: SimpleQueue[Point2D] = scout_bases
         self.scout_target: Optional[Point2D] = None
@@ -90,6 +87,7 @@ class Scout(Task):
         # We're still on the move.
         self.fails = 0
         self.previous_pos = py_unit.position
+
         return Status.NOT_DONE
 
     def switch_target(self, py_unit: PyUnit) -> Status:
