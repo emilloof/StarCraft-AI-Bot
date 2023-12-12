@@ -41,4 +41,6 @@ class CustomPriorityQueue(PriorityQueue):
     def __contains__(self, item):
         return item in self.entry_finder
     def peek(self):
+        if self.empty():
+            return None
         return self.queue[0]

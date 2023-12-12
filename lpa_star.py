@@ -18,11 +18,15 @@ def neighbouringVertexes(current_vertex : Vertex, vertexes : dict):
                 if(current_neighbour != None):
                     neighbour_list.append((current_neighbour.position_x, current_neighbour.position_y))
     return neighbour_list
-
+'''
 def calculateHeuristic(first_vertex : Vertex, second_vertex: Vertex):
     Vertex.distance = lambda self, other: abs(self.position_x - other.position_x) + abs(self.position_y - other.position_y)
     return first_vertex.distance(second_vertex)
+'''
 
+def calculateHeuristic(first_vertex: Vertex, second_vertex: Vertex):
+    Vertex.distance = lambda self, other: math.sqrt((self.position_x - other.position_x)**2 + (self.position_y - other.position_y)**2)
+    return first_vertex.distance(second_vertex)
 
 def calculateKey(vertexes: dict, current_point: (int, int), goal_point: (int, int)):
     kv_0 = min(vertexes[current_point].g_value, vertexes[current_point].rhs_value) + calculateHeuristic(vertexes[current_point], vertexes[goal_point])
@@ -52,13 +56,14 @@ def computeShortestPath(priority_queue : CustomPriorityQueue, secondary_queue: l
         top_key = top_element[0]
         top_point = top_element[1]
         while(top_key < calculateKey(vertexes, goal_point, goal_point) or vertexes[goal_point].rhs_value != vertexes[goal_point].g_value):
-            
+            print("fast här")
             
             parent_point = top_point
             
             
             #print("top_point", top_point)
             while(True):
+                print("i true loopen")
                 if(priority_queue.peek() not in secondary_queue):
                     priority_queue.get()
                 else:
@@ -73,7 +78,7 @@ def computeShortestPath(priority_queue : CustomPriorityQueue, secondary_queue: l
             vertexes[parent_point].child = vertexes[top_point]
             
             if(top_point == goal_point): 
-                print("goal found")
+                print("goal found", top_point)
                 return vertexes[top_point].build_path()
            
             #print(vertexes[top_point].parent)

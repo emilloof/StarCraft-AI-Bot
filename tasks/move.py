@@ -33,21 +33,29 @@ class Move(Task):
         :return: Status.DONE if the task is started.
         """
         #- init for LPA* - hanlu520
-        ''' start_position = (int(round(py_unit.position.x)), int(round(py_unit.position.y)))
+        start_position = (int(round(py_unit.position.x)), int(round(py_unit.position.y)))
         target_position = (int(round(self.target.x)), int(round(self.target.y)))    
         print("STARTPOS_ ", start_position)
         print("MÅLPOS_ ", target_position)
-        
+        if(not self.agent.map_tools.is_walkable(start_position[0], start_position[1])):
+            print("Startpositionen är inte walkable")
+            return Status.FAIL
+
         priority_queue = CustomPriorityQueue()
         secondary_queue = []
-        self.agent.vertex_dict[start_position].rhs_value = 0
+        vertexes = copy.copy(self.agent.vertex_dict)
+        vertexes[start_position].rhs_value = 0
         #self.agent.vertex_dict[start_position].parent = None
-        self.agent.vertex_dict[target_position].parent = None
+        vertexes[target_position].child = None
 
-        initial_key_value = calculateKey(self.agent.vertex_dict, start_position, target_position)
+        if(not self.agent.map_tools.is_walkable(start_position[0], start_position[1])):
+            print("Startpositionen är inte walkable")
+            return Status.FAIL
+
+        initial_key_value = calculateKey(vertexes, start_position, target_position)
         priority_queue.put((initial_key_value, start_position)), secondary_queue.append((initial_key_value, start_position))
-        path = computeShortestPath(priority_queue, secondary_queue, self.agent.vertex_dict, start_position, target_position)
-        print("PATH_ ", path)'''
+        path = computeShortestPath(priority_queue, secondary_queue, vertexes, start_position, target_position)
+        print("PATH_ ", path)
 
         py_unit.move(self.target)
         self.previous_pos = py_unit.position

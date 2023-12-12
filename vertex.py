@@ -5,7 +5,7 @@ import math
 class Vertex():
     def __init__(self, position : (int, int), child=None, rhs_value=math.inf, g_value=math.inf, neighbour_list=None) -> None:
         self.child = child
-        self.position = position
+        self.position = position 
         self.position_x = position[0]
         self.position_y = position[1]
         self.rhs_value = rhs_value
