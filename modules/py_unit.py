@@ -83,6 +83,7 @@ class PyUnit:
 
     def give_task(self, task: Task) -> Status:
         """Gives a new task to the unit"""
+
         status = task.on_start(self)
         if not status.is_fail():
             self.task = task

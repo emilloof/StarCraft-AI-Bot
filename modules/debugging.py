@@ -115,7 +115,6 @@ def path_debug(agent: BasicAgent) -> dict:
         for y in range(agent.map_tools.height)
     }
 
-
 def debug_map(agent: BasicAgent) -> None:
     """Displays the map in a separate window."""
     """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
