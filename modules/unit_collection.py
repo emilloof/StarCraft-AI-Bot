@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Any
 
+from config import TIME_KEEP_ENEMY
+
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
@@ -17,10 +19,12 @@ class UnitCollection:
         self.py_units: dict[int, PyUnit] = {}
         self.groups: dict[Union[any], set[PyUnit]] = {}
         self.create_group(PLAYER_SELF)
-        self.create_group(PLAYER_ENEMY)
+        self.create_group(PLAYER_ENEMY) # Only enemies that we can see
         self.create_group(PLAYER_NEUTRAL)
         self.needs_vision_on: list[PyUnit] = []
         self.new_units_this_step: list[PyUnit] = []
+
+        self.old_enemies: dict[Unit, PyUnit] = dict()
 
     def __iter__(self):
         for py_unit in self.py_units.values():
@@ -58,6 +62,7 @@ class UnitCollection:
 
         if unit_typeid_used:
             return_set = return_set.intersection(unit_type_set)
+   
 
         return return_set
 
@@ -74,15 +79,37 @@ class UnitCollection:
         for unit in self.agent.get_all_units():
             # The building indication has id 0.
             if unit.id != 0:
+
                 is_new_unit = self.add_or_update(unit)
                 if is_new_unit:
                     self.new_units_this_step.append(self.get_py_unit(unit.id))
 
+                    if (unit in self.old_enemies): # is completely new? -> remove from old_enemies
+                        self.old_enemies.pop(unit)
+                
+                # add keep_time value if enemy unit
+                if unit.player == PLAYER_ENEMY:
+                    self.py_units[unit.id].last_seen = self.agent.current_frame
+
         # All units that have left the vision are removed
         for py_unit in self.needs_vision_on:
+            # add lost enemy to old_enemies
+            if py_unit.unit.player == PLAYER_ENEMY:
+                self.old_enemies[py_unit.unit] = py_unit
             self.remove_from_all_groups(py_unit)
         self.remove(self.needs_vision_on)
         self.needs_vision_on = []
+
+        # remove too old enemies
+        for unit in list(self.old_enemies.keys()):
+            # ic(self.old_enemies[unit])
+            if (self.agent.current_frame - self.old_enemies[unit].last_seen > TIME_KEEP_ENEMY):
+                self.old_enemies.pop(unit)
+    
+    def get_old_enemies(self) -> set[PyUnit]:
+        """Returns a set of enemy units that are not in vision (but previously were)"""
+        return set(self.old_enemies.values())
+
 
     def add_or_update(self, unit: Unit) -> bool:
         """
@@ -157,5 +184,7 @@ class UnitCollection:
                 py_unit.on_death()
                 dead_units.append(py_unit)
                 self.remove_from_all_groups(py_unit)
+
+                self.old_enemies.pop(py_unit.unit, None)
         if dead_units:
             self.remove(dead_units)

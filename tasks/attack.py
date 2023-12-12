@@ -1,5 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
+from tasks.attack_scripts import AttackScripts
+from tasks.attack_decider import *
 
 if TYPE_CHECKING:
     from modules.py_unit import PyUnit
@@ -17,6 +19,7 @@ class Attack(Task):
         self.target = pos
         self.previous_pos: Optional[Point2D] = None
         self.fails: int = 0
+        self.agent = agent
 
     def on_start(self, py_unit: PyUnit) -> Status:
         """
@@ -26,7 +29,7 @@ class Attack(Task):
         """
         # Target is a coordinate
         if isinstance(self.target, Point2D):
-            py_unit.attack_move(self.target)
+            py_unit.move(self.target)
         else:
             return Status.FAIL
         return Status.DONE
@@ -38,10 +41,19 @@ class Attack(Task):
         :return: Status.DONE if the unit is idle. Status.FAIL if the unit is dead. Otherwise returns Status.NOT_DONE.
         """
         if py_unit.is_idle:
-            return Status.DONE
+            print("idle")
+            if py_unit.kite:
+                py_unit.kite = False
+                py_unit.move(self.target)
+            else:
+                return Status.DONE
 
         if not py_unit.is_alive:
             # Unit is dead
             return Status.FAIL
+
+        state = Situation(self.agent, py_unit, PLAYER_SELF)
+        alpha_beta_search(state, 3, True)
+        AttackScripts.general_loop(state.script, py_unit, self.agent)
 
         return Status.NOT_DONE

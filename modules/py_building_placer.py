@@ -28,9 +28,6 @@ class PyBuildingPlacer:
         :param type_to_build:
         :return:
         """
-        print("NEW BUILDING")
-        print(type_to_build.name)
-        print(self.agent.get_my_units())
         # If it is a refinery it needs to be build on top of a geyser
         if type_to_build.is_refinery:
             pos = self.find_refinery_position()
@@ -54,12 +51,10 @@ class PyBuildingPlacer:
 
         refineries = [ref.tile_position for ref in
                       self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.is_refinery)]
-        #print(refineries)
         upcoming = [t.pos.tile_position for t in
                     self.agent.task_manager.current_tasks.get_tasks(build.Build, None).union(
                         self.agent.task_manager.task_queue.get_tasks(build.Build, None)) if
                     t.building_type.is_refinery and t.pos]
-        #print(upcoming)
         for base_location in self.agent.base_location_manager.get_occupied_base_locations(PLAYER_SELF):
             for geyser in base_location.geysers:
                 if geyser.tile_position not in refineries + upcoming:
@@ -69,29 +64,18 @@ class PyBuildingPlacer:
     def find_walloff_position(self, type_to_build: UnitType) -> Point2DI:   # Gjord av ERIk
         """ Finds a location on a bottlenecks starting at the ones closest to the home base """
         
-        print("IT IS WALLOFF")
         # All supply depots
         return_set = set(self.agent.unit_collection.py_units.values())
         new_set = {py_unit for py_unit in return_set if py_unit.unit_type.unit_typeid == (UNIT_TYPEID.TERRAN_SUPPLYDEPOT or UNIT_TYPEID.TERRAN_SUPPLYDEPOTLOWERED)}
-        #print( lambda u: u.unit_type.unit_typeid == UNIT_TYPEID.TERRAN_SUPPLYDEPOT)
-        """supply_depots = [sup.tile_position for sup in 
-                    self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.unit_typeid == library.UNIT_TYPEID.TERRAN_SUPPLYDEPOT)]"""
-        #print("SUPPLIES", new_set)
-        #print("ALL", return_set)
         upcoming_supply_depots = [t.pos for t in
                     self.agent.task_manager.current_tasks.get_tasks(build.Build, None).union(
                         self.agent.task_manager.task_queue.get_tasks(build.Build, None)) if
                     t.building_type.unit_typeid == (UNIT_TYPEID.TERRAN_SUPPLYDEPOT or UNIT_TYPEID.TERRAN_SUPPLYDEPOT) and t.pos]
-        #print("UPCOMING SUPPLY DEPOTS", upcoming_supply_depots)
 
         for bottleneck in self.agent.BOTTLENECKS:
             for tile in bottleneck:
-                #print("TILE TO CHECK IF OCCUPIED", tile)
                 if tile not in list(new_set) + upcoming_supply_depots:
-                    #print("IT WAS NOT OCCUPIED", tile)
                     return tile
-                #print("IT WAS OCCUPIED", tile)
-            #print("THE BOTTLENECK IS FULL")
         return None
 
     def can_build_addon(self, candidate: PyUnit) -> bool:
