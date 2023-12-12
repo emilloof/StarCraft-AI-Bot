@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from config import USE_CHOKES
 
 from modules.potential_flow.regions import (
     Region,
@@ -119,6 +120,8 @@ def debug_map(agent: BasicAgent) -> None:
     """Displays the map in a separate window."""
     """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
                 for y in range(agent.map_tools.height)]"""
+    if not USE_CHOKES:
+        return
     heat_map = []
     bottle_tiles = self.BOTTLENECKS
     #print(bottle_tiles)

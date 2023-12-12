@@ -67,12 +67,9 @@ class BasicAgent(pycc.IDABot):
 
     @cached_property
     def non_start_bases_positions(self) -> frozenset:
-        return frozenset(base.position
-                         for base in self.base_location_manager.base_locations if (
-                             not (
-                                 base.is_player_start_location(pycc.PLAYER_SELF)
-                                 or base.is_player_start_location(pycc.PLAYER_ENEMY)))
-                         )
+        return frozenset(base.position for base in self.base_location_manager.base_locations
+                         if (not (base.is_player_start_location(pycc.PLAYER_SELF)
+                                  or base.is_player_start_location(pycc.PLAYER_ENEMY))))
 
     def on_game_start(self) -> None:
         """Runs on game start. Loads necessary data and generates settings"""
@@ -80,14 +77,16 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
-       
-        start_base_pos = self.base_location_manager.get_player_starting_base_location(pycc.PLAYER_SELF).position
-        self.BOTTLENECKS = bottle.get_bottlenecks(self, start_base_pos)  # ERIk
-        
+
+        start_base_pos = self.base_location_manager.get_player_starting_base_location(
+            pycc.PLAYER_SELF).position
+        if USE_CHOKES:
+            self.BOTTLENECKS = bottle.get_bottlenecks(self, start_base_pos)    # ERIk
+
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self))  
+            self.debugger.on_step(lambda: debug.debug_map(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
 
@@ -97,16 +96,27 @@ class BasicAgent(pycc.IDABot):
 
         pycc.IDABot.on_step(self)
 
-        for bott in self.BOTTLENECKS: # ERIK
+        for bott in self.BOTTLENECKS:    # ERIK
             for tile in bott:
                 self.map_tools.draw_tile(tile, pycc.Color.BLUE)
 
-        all_friendly = set(u for u in self.unit_collection.py_units.values() if u.player == pycc.PLAYER_SELF)
-        all_supply_depots = {py_unit for py_unit in all_friendly if py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOT or py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOTLOWERED}
-        all_friendly_units = {py_unit for py_unit in all_friendly if py_unit.unit_type.is_worker or py_unit.unit_type.is_combat_unit}
+        all_friendly = set(u for u in self.unit_collection.py_units.values()
+                           if u.player == pycc.PLAYER_SELF)
+        all_supply_depots = {
+            py_unit
+            for py_unit in all_friendly
+            if py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOT
+            or py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOTLOWERED
+        }
+        all_friendly_units = {
+            py_unit
+            for py_unit in all_friendly
+            if py_unit.unit_type.is_worker or py_unit.unit_type.is_combat_unit
+        }
         for supply_depot in all_supply_depots:
-            is_friendly_unit_nearby = any(bottle.distance_between_tiles(supply_depot.tile_position, unit.tile_position) < 3
-                                   for unit in all_friendly_units)
+            is_friendly_unit_nearby = any(
+                bottle.distance_between_tiles(supply_depot.tile_position, unit.tile_position) < 3
+                for unit in all_friendly_units)
             if is_friendly_unit_nearby:
                 supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_LOWER)
             else:
@@ -125,8 +135,8 @@ class BasicAgent(pycc.IDABot):
 
         if self.current_frame % FRAME_SKIP == 1:
             new_units = [
-                u for u in self.unit_collection.new_units_this_step
-                if u.player == pycc.PLAYER_SELF]
+                u for u in self.unit_collection.new_units_this_step if u.player == pycc.PLAYER_SELF
+            ]
             self.task_manager.on_step(new_units)
 
             self.unit_collection.remove_dead_units()
@@ -146,14 +156,10 @@ class BasicAgent(pycc.IDABot):
         # 675 tick equals roughly 30 sec
         if self.current_frame % 100 == 0:
             # print("time: ", self.time)
-            self.curr_strategy, self.curr_stratstr, self.hp_tracker, self.last_hp_diff = self.strategy.choose_strategy(self,
-                                                                                                                       self.strategy,
-                                                                                                                       self.bayes_model,
-                                                                                                                       self.hp_tracker,
-                                                                                                                       self.strategy.get_hit_points(self),
-                                                                                                                       self.internal_minerals,
-                                                                                                                       self.current_frame,
-                                                                                                                       self.last_hp_diff)
+            self.curr_strategy, self.curr_stratstr, self.hp_tracker, self.last_hp_diff = self.strategy.choose_strategy(
+                self, self.strategy, self.bayes_model, self.hp_tracker,
+                self.strategy.get_hit_points(self), self.internal_minerals, self.current_frame,
+                self.last_hp_diff)
 
             print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
             # exit()
@@ -172,7 +178,7 @@ class BasicAgent(pycc.IDABot):
         if self.current_frame - self.clear_cache_frame >= FRAME_CLEAR_CACHE:
             self.clear_cache_frame = self.current_frame
             for func in self.cache_functions:
-                if callable(func):  # hasattr(func, "cache_clear"):
+                if callable(func):    # hasattr(func, "cache_clear"):
                     func.cache_clear()
                 else:
                     del func
@@ -183,7 +189,11 @@ class BasicAgent(pycc.IDABot):
         self.debugger.tile_margin = 1
         # sets the colormap for the debugger {(interval): (r, g, b)}
         color_map = {
-            (0, 0): (0, 0, 0,),
+            (0, 0): (
+                0,
+                0,
+                0,
+            ),
             (1, 1): (255, 255, 255),
             (2, 2): (0, 255, 0),
             (3, 3): (255, 0, 0),
@@ -198,7 +208,6 @@ class BasicAgent(pycc.IDABot):
             (12, 12): (100, 255, 100),
             (13, 13): (255, 100, 100),
             (14, 14): (255, 150, 100),
-
             (15, 15): (100, 100, 100)
         }
         self.debugger.set_color_map(color_map)

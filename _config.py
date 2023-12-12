@@ -19,6 +19,8 @@ DEBUG_UNIT = False
 DEBUG_VISUAL = False
 # Enable scout debugger
 DEBUG_SCOUT = True
+# Use eriks chokepoints
+USE_CHOKES = False
 
 # Enable debugging (showing list of) enemies
 DEBUG_ENEMIES = False
