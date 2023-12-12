@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from config import USE_CHOKES
 
 from modules.potential_flow.regions import (
     Region,
@@ -11,12 +12,50 @@ if TYPE_CHECKING:
 
 from library import PLAYER_SELF, PLAYER_NEUTRAL, PLAYER_ENEMY, Color, Point2DI
 
-# Skapad av eriei013 för testning
+# Skapad av eriei013 för testning av depth map
 def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:
+    var = False
     tile = Point2DI(x, y)
-    if bottle_map[tile] == 1:
+    """if tile in bottle_map:
+        heat_map_row.append(2)
+        var = True"""
+    if tile in bottle_map.get(1, []):
+        heat_map_row.append(2)
+        var = True
+    elif tile in bottle_map.get(2, []):
+        heat_map_row.append(3)
+        var = True
+    elif tile in bottle_map.get(3, []):
+        heat_map_row.append(4)
+        var = True
+    elif tile in bottle_map.get(4, []):
+        heat_map_row.append(5)
+        var = True
+    return var
+
+# Skapad av eriei013 för testning av gate tiles
+def print_gate_tiles(bottle_tiles: list, heat_map_row: list, x: int, y: int) -> bool:
+    tile = Point2DI(x, y)
+
+    """is_in_list = any(tile in sublist for sublist in bottle_tiles)
+    if is_in_list:
         heat_map_row.append(2)
         return True
+    return False"""
+    for l in bottle_tiles:
+        if tile in l:
+            if len(l) > 1:
+                #if len(l) > 1:
+                heat_map_row.append(2)
+                return True
+            else:
+                heat_map_row.append(3)
+                return True
+
+
+            """else:
+                heat_map_row.append(3)
+                return True"""
     return False
 
 
@@ -55,11 +94,51 @@ def debug_terrain(agent: BasicAgent) -> None:
 
 def path_debug(agent: BasicAgent) -> dict:
     """Displays the map in a separate window."""
+    """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
+                for y in range(agent.map_tools.height)]"""
+    heat_map = []
+    for y in range(agent.map_tools.height):
+        heat_map_row = []
+        for x in range(agent.map_tools.width):
+            if agent.map_tools.is_walkable(x, y):
+                for neighbour in get_neighbours2(agent, x, y).values():
+                    if not agent.map_tools.is_walkable(neighbour[0], neighbour[1]):
+                        tmap[neighbour] = 1
+    agent.debugger.set_display_values(tmap, (agent.map_tools.width, agent.map_tools.height))
+
+
+def path_debug(agent: BasicAgent) -> dict:
+    """Displays the map in a separate window."""
     return {
         (x, y): int(agent.map_tools.is_walkable(x, y))
         for x in range(agent.map_tools.width)
         for y in range(agent.map_tools.height)
     }
+
+def debug_map(agent: BasicAgent) -> None:
+    """Displays the map in a separate window."""
+    """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
+                for y in range(agent.map_tools.height)]"""
+    if not USE_CHOKES:
+        return
+    heat_map = []
+    bottle_tiles = self.BOTTLENECKS
+    #print(bottle_tiles)
+    for y in range(agent.map_tools.height):
+        heat_map_row = []
+        for x in range(agent.map_tools.width):
+            if int(agent.map_tools.is_walkable(x, y)):
+                b = False
+                #b = print_depth(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #b = print_gate_tiles(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #print(bottle_tiles)
+                if not b:
+                    heat_map_row.append(1)
+            else:
+                heat_map_row.append(0)
+        heat_map.append(heat_map_row)
+
+    agent.debugger.set_display_values(heat_map)
 
 
 def heat_map_debug(agent: BasicAgent) -> None:
@@ -134,9 +213,6 @@ def debug_enemies_text(agent: BasicAgent) -> None:
     agent.map_tools.draw_text_screen(
         0.01,
         0.03,
-        "Enemies:\n{}".format(
-            "\n".join(
-                [str(enemy) for enemy in agent.unit_collection.get_group(PLAYER_ENEMY)]
-            )
-        ),
+        "Enemies:\n{}".format("\n".join(
+            [str(enemy) for enemy in agent.unit_collection.get_group(PLAYER_ENEMY)])),
     )

@@ -15,10 +15,11 @@ from tasks.gather_gas import GatherGas
 from tasks.build import Build
 from tasks.scout import Scout
 from tasks.attack import Attack
+from tasks.move import Move
 from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID
 from modules.extra import exists_producer_for, get_worker_type, has_prerequisites
 from queue import SimpleQueue
-from config import DEBUG_CONSOLE
+from config import DEBUG_CONSOLE, USE_MOVE
 
 RESOURCE_PRIO = 10
 WORKER_PRIO = 6
@@ -28,6 +29,7 @@ UPGRADE_PRIO = 4
 BUILDING_PRIO = 3
 SCOUT_PRIO = 2
 ATTACK_PRIO = 2
+MOVE_PRIO = 2
 
 
 class TaskCollection:
@@ -110,7 +112,10 @@ class TaskManager:
         """Generates all tasks that need to be preformed by the bot."""
         self.gather()
         self.build()
-        self.attack()
+        if USE_MOVE:
+            self.move()
+        else:
+            self.attack()
         if self.agent.current_frame == 1:
             self.improved_scout()  # self.scout()
 
@@ -209,7 +214,16 @@ class TaskManager:
             return Build(type_to_build, pos, BUILDING_PRIO, self.agent)
 
         return None
-
+    
+    def move(self) -> None:
+        """Generate tasks for moving units to a target position."""
+        pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
+        py_units = self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.is_combat_unit, Idle)
+        if(len(py_units) > 0):
+            for i in range(0, len(py_units)):
+                print("moveTask added to queue")   
+                self.task_queue.add(Move(pos, MOVE_PRIO, self.agent))
+    
     def attack(self) -> None:
         """Generates attack tasks targeting the enemy starting base for every combat unit."""
         pos = self.agent.base_location_manager.get_player_starting_base_location(

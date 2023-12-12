@@ -1,10 +1,13 @@
 from functools import cached_property
 from typing import Union
 import library as pycc
+
+from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
+    BUILD_ORDER_PATH, USE_CHOKES, DEBUG_ENEMIES, FRAME_CLEAR_CACHE, USE_MOVE
 from modules import BuildOrder, RegionManager, TaskManager, UnitCollection, PyBuildingPlacer, debugging as debug
 from modules.extra import unit_types_by_condition
-from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_ENEMIES, DEBUG_LOGS, DEBUG_TEXT, \
-    DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, BUILD_ORDER_PATH, FRAME_CLEAR_CACHE
+import bottlenecks as bottle    # Erik
+from modules.path_finding import vertex #For pathfinding - hanlu520
 
 
 # David
@@ -66,12 +69,20 @@ class BasicAgent(pycc.IDABot):
 
     @cached_property
     def non_start_bases_positions(self) -> frozenset:
-        return frozenset(base.position
-                         for base in self.base_location_manager.base_locations if (
-                             not (
-                                 base.is_player_start_location(pycc.PLAYER_SELF)
-                                 or base.is_player_start_location(pycc.PLAYER_ENEMY)))
-                         )
+        return frozenset(base.position for base in self.base_location_manager.base_locations
+                         if (not (base.is_player_start_location(pycc.PLAYER_SELF)
+                                  or base.is_player_start_location(pycc.PLAYER_ENEMY))))
+    
+    @cached_property
+    def vertex_dict(self):
+        # Safe-path init for vertex with all neccessary vertex data
+        vertex_dict = {}
+        for y in range(self.map_tools.height):
+            for x in range(self.map_tools.width):
+                if(self.map_tools.is_walkable(x, y)):
+                    current_point = (x, y)
+                    vertex_dict[current_point] = (vertex.Vertex(current_point))
+        return vertex_dict
 
     def on_game_start(self) -> None:
         """Runs on game start. Loads necessary data and generates settings"""
@@ -79,6 +90,14 @@ class BasicAgent(pycc.IDABot):
         self.tech_tree.suppress_warnings(True)
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
+
+        start_base_pos = self.base_location_manager.get_player_starting_base_location(
+            pycc.PLAYER_SELF).position
+        if USE_CHOKES:
+            self.BOTTLENECKS = bottle.get_bottlenecks(self, start_base_pos)    # ERIk
+        if USE_MOVE:
+            # init vertex_dict
+            _ = self.vertex_dict
 
         if DEBUG_VISUAL:
             self.set_up_debugging()
@@ -104,10 +123,13 @@ class BasicAgent(pycc.IDABot):
 
             self.unit_collection.on_step()
 
+            if USE_CHOKES:
+                self.update_supply_depots()
+
         if self.current_frame % FRAME_SKIP == 1:
             new_units = [
-                u for u in self.unit_collection.new_units_this_step
-                if u.player == pycc.PLAYER_SELF]
+                u for u in self.unit_collection.new_units_this_step if u.player == pycc.PLAYER_SELF
+            ]
             self.task_manager.on_step(new_units)
 
             self.unit_collection.remove_dead_units()
@@ -126,18 +148,7 @@ class BasicAgent(pycc.IDABot):
         # Only run the strategy decider every 100 tick
         # 675 tick equals roughly 30 sec
         if self.current_frame % 100 == 0:
-            # print("time: ", self.time)
-            self.curr_strategy, self.curr_stratstr, self.hp_tracker, self.last_hp_diff = self.strategy.choose_strategy(self,
-                                                                                                                       self.strategy,
-                                                                                                                       self.bayes_model,
-                                                                                                                       self.hp_tracker,
-                                                                                                                       self.strategy.get_hit_points(self),
-                                                                                                                       self.internal_minerals,
-                                                                                                                       self.current_frame,
-                                                                                                                       self.last_hp_diff)
-
-            print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
-            # exit()
+            self.update_strategy()
 
         if DEBUG_UNIT:
             debug.debug_units(self)
@@ -151,20 +162,61 @@ class BasicAgent(pycc.IDABot):
             self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
 
         if self.current_frame - self.clear_cache_frame >= FRAME_CLEAR_CACHE:
-            self.clear_cache_frame = self.current_frame
-            for func in self.cache_functions:
-                if callable(func):  # hasattr(func, "cache_clear"):
-                    func.cache_clear()
-                else:
-                    del func
-            del self.non_start_bases_positions
+            self.clear_cache_functions()
+
+    def update_strategy(self):
+        # print("time: ", self.time)
+        self.curr_strategy, self.curr_stratstr, self.hp_tracker, self.last_hp_diff = self.strategy.choose_strategy(
+            self, self.strategy, self.bayes_model, self.hp_tracker,
+            self.strategy.get_hit_points(self), self.internal_minerals, self.current_frame,
+            self.last_hp_diff)
+        print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
+        # exit()
+    
+    def clear_cache_functions(self):
+        self.clear_cache_frame = self.current_frame
+        for func in self.cache_functions:
+            if callable(func):    # hasattr(func, "cache_clear"):
+                func.cache_clear()
+            else:
+                del func
+        del self.non_start_bases_positions
+
+    
+    def update_supply_depots(self):
+        for bott in self.BOTTLENECKS:    # ERIK
+            for tile in bott:
+                self.map_tools.draw_tile(tile, pycc.Color.BLUE)
+        
+        all_friendly = set(u for u in self.unit_collection.py_units.values()
+                           if u.player == pycc.PLAYER_SELF)
+        all_supply_depots = {
+            py_unit
+            for py_unit in all_friendly
+            if py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOT
+            or py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOTLOWERED
+        }
+        all_friendly_units = {
+            py_unit
+            for py_unit in all_friendly
+            if py_unit.unit_type.is_worker or py_unit.unit_type.is_combat_unit
+        }
+        for supply_depot in all_supply_depots:
+            is_friendly_unit_nearby = any(
+                bottle.distance_between_tiles(supply_depot.tile_position, unit.tile_position) < 3
+                for unit in all_friendly_units)
+            if is_friendly_unit_nearby:
+                supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_LOWER)
+            else:
+                supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_RAISE)
+
 
     def set_up_debugging(self) -> None:
         """Set up visual debugger"""
         self.debugger.tile_margin = 1
         # sets the colormap for the debugger {(interval): (r, g, b)}
         color_map = {
-            (0, 0): (0, 0, 0,),
+            (0, 0): (0, 0, 0),
             (1, 1): (255, 255, 255),
             (2, 2): (0, 255, 0),
             (3, 3): (255, 0, 0),
@@ -179,7 +231,6 @@ class BasicAgent(pycc.IDABot):
             (12, 12): (100, 255, 100),
             (13, 13): (255, 100, 100),
             (14, 14): (255, 150, 100),
-
             (15, 15): (100, 100, 100)
         }
         self.debugger.set_color_map(color_map)
