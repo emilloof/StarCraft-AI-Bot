@@ -2,28 +2,31 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
+    from modules.py_unit import PyUnit
     from agents.basic_agent import BasicAgent
 
-from library import Point2D
-from modules.py_unit import PyUnit
+from library import Point2DI
 from tasks.task import Task, Status
-import dlite
 
-#Kolla hur du implementerar D*Lite i Moveklassen. 
+#added by hanlu520
+from modules.path_finding.astar_temp import a_star
+from modules.path_finding.custom_priority_queue import CustomPriorityQueue
+from modules.path_finding.vertex import Vertex
+from modules.path_finding.lpa_star import *
+from queue import PriorityQueue
+import copy
+
 
 class Move(Task):
     """Task for moving a unit"""
 
     def __init__(self, pos: Point2D, prio: int, agent: BasicAgent):
-        super().__init__(prio=prio, agent=agent)
+        super().__init__(prio=prio, agent= agent, candidates=agent.COMBAT_TYPES)
         self.target = pos
         self.previous_pos: Optional[Point2D] = None
         self.fails: int = 0
         self.frame_counter = 0
-        
-        #added. - hanlu520
-        self.agent = agent
-
+        self.agent = agent        
         
 
     def on_start(self, py_unit: PyUnit) -> Status:
@@ -31,15 +34,45 @@ class Move(Task):
         Start or restart the task.
         :return: Status.DONE if the task is started.
         """
-        #py_unit.move(self.target)
+        print("ons_start")
+        #- init for LPA* - hanlu520
+        start_position = (int(round(py_unit.position.x)), int(round(py_unit.position.y)))
+        target_position = (int(round(self.target.x)), int(round(self.target.y)))    
+        vertexes = copy.deepcopy(self.agent.vertex_dict)
+        if not self.agent.map_tools.is_walkable(start_position[0], start_position[1]):
+            vertexes[(start_position[0], start_position[1])] = Vertex((start_position[0], start_position[1]))
+            #print("Startpositionen är inte walkable")
+            #return Status.FAIL
+        vertexes[start_position].g_value = 0
 
-        start_tile = (int(round(py_unit.position.x)), int(round(py_unit.position.y))) 
-        target_tile = (int(round(self.target.x)), int(round(self.target.y)))
-        dlite.dLiteMain(self.agent, start_tile, target_tile)
+        #priority_queue = CustomPriorityQueue()
 
+        open_set = CustomPriorityQueue()
+        #secondary_queue = []
+        
+        #vertexes[start_position].rhs_value = 0
+        #self.agent.vertex_dict[start_position].parent = None
+        #vertexes[target_position].child = None
+        #initial_key_value = calculateKey(vertexes, start_position, target_position)
+        #priority_queue.put((initial_key_value, start_position))
+        # secondary_queue.append((initial_key_value, start_position))
+        #path = computeShortestPath(priority_queue, secondary_queue, vertexes, start_position, target_position)
+
+        open_set.put((0, start_position))
+        path = a_star(start_position, target_position, vertexes, open_set)
+        print("PATH_ ", path)
+        '''if path is None:
+            return Status.FAIL'''
+        for i in path[1::3]:
+            py_unit.move(Point2DI(i[0], i[1]))
         self.previous_pos = py_unit.position
         return Status.DONE
 
+    
+    
+    
+    
+    
     def on_step(self, py_unit: PyUnit) -> Status:
         """
         Checks if the task is continuing.
@@ -53,12 +86,10 @@ class Move(Task):
             return Status.FAIL
         if py_unit.is_alive:
             # Are we at the selected target yet, or at least very, very close?
-            if self.agent.maptools.get_ground_distance(py_unit.position, self.target) < 1:
+            
+            if(self.agent.map_tools.get_ground_distance(py_unit.position, self.target) < 1):
                 return Status.DONE
-            if(self.frame_counter % 5 == 0):
-                self.frame_counter = 0
-
-
+            
             # Are we stuck at the same position?
             elif py_unit.position == self.previous_pos:
                 self.fails += 1

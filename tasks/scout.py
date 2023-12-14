@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+
 if TYPE_CHECKING:
     from modules.py_unit import PyUnit
     from agents.basic_agent import BasicAgent
@@ -8,13 +9,11 @@ if TYPE_CHECKING:
 from library import UnitType, Point2D
 from tasks.task import Task, Status
 from queue import SimpleQueue
-import dlite
-
 class Scout(Task):
     """Task for scouting a list of bases."""
 
-    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent):
-        super().__init__(prio=prio, candidates=agent.WORKER_TYPES)
+    def __init__(self, scout_bases: SimpleQueue[Point2D], prio: int, agent: BasicAgent, **kwargs):
+        super().__init__(prio=prio, candidates=agent.WORKER_TYPES, agent=agent, **kwargs)
         self.unit_type: Optional[UnitType] = None
         self.scout_bases: SimpleQueue[Point2D] = scout_bases
         self.scout_target: Optional[Point2D] = None
@@ -40,10 +39,7 @@ class Scout(Task):
         #  If it has a target the task is restarted
         if self.target:
 
-            #py_unit.move(self.target)
-            start_tile = (int(round(py_unit.position.x)), int(round(py_unit.position.y))) 
-            target_tile = (int(round(self.target.x)), int(round(self.target.y)))
-            dlite.dLiteMain(self.agent, start_tile, target_tile)
+            py_unit.move(self.target)
             return Status.DONE
 
         # Sets first target, then removes it from list
@@ -51,10 +47,8 @@ class Scout(Task):
 
         # From start only support for worker scouting.
         if self.unit_type in self.candidates:
-            #py_unit.move(self.target)
-            start_tile = (int(round(py_unit.position.x)), int(round(py_unit.position.y))) 
-            target_tile = (int(round(self.target.x)), int(round(self.target.y)))
-            dlite.dLiteMain(self.agent, start_tile, target_tile)
+            py_unit.move(self.target)
+           
         # Features for other units could be added.
         else:
             return Status.FAIL
@@ -93,6 +87,7 @@ class Scout(Task):
         # We're still on the move.
         self.fails = 0
         self.previous_pos = py_unit.position
+
         return Status.NOT_DONE
 
     def switch_target(self, py_unit: PyUnit) -> Status:
@@ -103,9 +98,6 @@ class Scout(Task):
         else:
             # Switching target to next coordinates in list to scout.
             self.target = self.scout_bases.get()
-            #py_unit.move(self.target)
-            start_tile = (int(round(py_unit.position.x)), int(round(py_unit.position.y))) 
-            target_tile = (int(round(self.target.x)), int(round(self.target.y)))
-            dlite.dLiteMain(self.agent, start_tile, target_tile)
-            
+            py_unit.move(self.target)
+
             return Status.NOT_DONE
