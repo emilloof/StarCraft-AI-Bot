@@ -68,6 +68,7 @@ def scanMap(agent: 'BasicAgent', start_vertex : Vertex, goal_vertex : Vertex, k_
 
 
 
+
 #Ändra datan från att skicka vertexes till att skicka postionen, ochs sedan hämta vertex från dicten.
 def dLiteMain(agent : 'BasicAgent', start_point: (int, int), target_point: (int, int)):    
     priority_queue = CustomPriorityQueue()

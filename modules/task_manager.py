@@ -194,6 +194,7 @@ class TaskManager:
 
         return None
 
+    
     def attack(self) -> None:
         """Generates attack tasks targeting the enemy starting base for every combat unit."""
         pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
