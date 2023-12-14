@@ -9,9 +9,11 @@ from library import Point2D
 from tasks.task import Task, Status
 
 #added by hanlu520
+from modules.path_finding.astar_temp import a_star
 from modules.path_finding.custom_priority_queue import CustomPriorityQueue
 from modules.path_finding.vertex import Vertex
 from modules.path_finding.lpa_star import *
+from queue import PriorityQueue
 import copy
 
 
@@ -35,30 +37,30 @@ class Move(Task):
         #- init for LPA* - hanlu520
         start_position = (int(round(py_unit.position.x)), int(round(py_unit.position.y)))
         target_position = (int(round(self.target.x)), int(round(self.target.y)))    
-        print("STARTPOS_ ", start_position)
-        print("MÅLPOS_ ", target_position)
+ 
         if(not self.agent.map_tools.is_walkable(start_position[0], start_position[1])):
             print("Startpositionen är inte walkable")
             return Status.FAIL
 
-        priority_queue = CustomPriorityQueue()
-        secondary_queue = []
+        #priority_queue = CustomPriorityQueue()
+
+        open_set = CustomPriorityQueue()
+        #secondary_queue = []
         vertexes = copy.copy(self.agent.vertex_dict)
-        vertexes[start_position].rhs_value = 0
+        vertexes[start_position].g_value = 0
+        #vertexes[start_position].rhs_value = 0
         #self.agent.vertex_dict[start_position].parent = None
-        vertexes[target_position].child = None
-
-        if(not self.agent.map_tools.is_walkable(start_position[0], start_position[1])):
-            print("Startpositionen är inte walkable")
-            return Status.FAIL
-
-        initial_key_value = calculateKey(vertexes, start_position, target_position)
-        priority_queue.put((initial_key_value, start_position))
+        #vertexes[target_position].child = None
+        #initial_key_value = calculateKey(vertexes, start_position, target_position)
+        #priority_queue.put((initial_key_value, start_position))
         # secondary_queue.append((initial_key_value, start_position))
-        path = computeShortestPath(priority_queue, secondary_queue, vertexes, start_position, target_position)
-        print("PATH_ ", path)
+        #path = computeShortestPath(priority_queue, secondary_queue, vertexes, start_position, target_position)
 
-        py_unit.move(self.target)
+        open_set.put((0, start_position))
+        path = a_star(vertexes[start_position], vertexes[target_position], vertexes, open_set)
+        print("PATH_ ", path)
+        for i in path[1::2]:
+            py_unit.move(i)
         self.previous_pos = py_unit.position
         return Status.DONE
 

@@ -3,13 +3,14 @@ import math
 
 
 class Vertex():
-    def __init__(self, position : (int, int), child=None, rhs_value=math.inf, g_value=math.inf, neighbour_list=None) -> None:
+    def __init__(self, position : (int, int), child=None, rhs_value=math.inf, g_value=math.inf, f_value = math.inf, neighbour_list=None) -> None:
         self.child = child
         self.position = position 
-        self.position_x = position[0]
-        self.position_y = position[1]
+        self.x = position[0]
+        self.y = position[1]
         self.rhs_value = rhs_value
         self.g_value = g_value
+        self.f_value = f_value
         #self.neighbour_list = []
         #self.neighbours()
 
@@ -31,13 +32,13 @@ class Vertex():
 
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):
-            return self.position_x == other.position_x and self.position_y == other.position_y
+            return self.x == other.x and self.y == other.y
         elif isinstance(other, tuple):
-            return self.position_x == other[0] and self.position_y == other[1]
+            return self.x == other[0] and self.y == other[1]
         return False
         
     def __hash__(self) -> int:
-        return hash((self.position_x, self.position_y))
+        return hash((self.x, self.y))
 
                 
     

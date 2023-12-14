@@ -170,7 +170,7 @@ class BasicAgent(pycc.IDABot):
             self, self.strategy, self.bayes_model, self.hp_tracker,
             self.strategy.get_hit_points(self), self.internal_minerals, self.current_frame,
             self.last_hp_diff)
-        print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
+        #print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
         # exit()
     
     def clear_cache_functions(self):

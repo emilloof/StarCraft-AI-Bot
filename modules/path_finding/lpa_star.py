@@ -36,14 +36,17 @@ def calculateKey(vertexes: dict, current_point: (int, int), goal_point: (int, in
 
 def updateVertex(priority_queue : CustomPriorityQueue, secondary_queue : list, vertexes : dict, current_point : (int, int), start_point : (int, int), goal_point : (int, int)):
         neighbour_list = neighbouringVertexes(vertexes[current_point], vertexes)
-        if(vertexes[current_point] != vertexes[start_point]):
+        if vertexes[current_point] != vertexes[start_point]:
             lowest_value = math.inf
             for neighbour in neighbour_list:
                 neighbour_value = vertexes[neighbour].g_value + calculateHeuristic(vertexes[current_point], vertexes[neighbour])
                 if(neighbour_value < lowest_value):
                     lowest_value = neighbour_value
             vertexes[current_point].rhs_value = lowest_value
-        if(vertexes[current_point].g_value != vertexes[current_point].rhs_value):
+        print(vertexes[current_point] in priority_queue)
+        if vertexes[current_point] in priority_queue:
+            priority_queue.remove((calculateKey(vertexes, current_point, goal_point), current_point))
+        if vertexes[current_point].g_value != vertexes[current_point].rhs_value:
             # curr_point = (5, 5)
             # start_point = (1, 2)
             # goal_point = (10, 10)
