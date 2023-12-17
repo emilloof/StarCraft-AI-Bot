@@ -105,8 +105,8 @@ def attract_point_pval(scout: PFscout, scout_unit: PyUnit):
     re = Vector()
     pos = scout_unit.position
     for p in scout.attract_points:
-        scout.region_potentials.append(source_potential(p, pos) * (-32))  # * 100
-        # DEBUG
+        if DEBUG_SCOUT:
+            scout.region_potentials.append(source_potential(p, pos) * (-32))  # * 100
         re += source_potential(p, pos) * (-32)
     return re
 
