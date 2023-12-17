@@ -13,10 +13,10 @@ if TYPE_CHECKING:
 # Enemy potential flow
 # E(z) = p₅e^(-iα)N(z)
 #        ps
-def enemy_pf(ENEMY_NEEDLE, scout_pos: Point2D, enemy: PyUnit):
+def enemy_pf(ENEMY_NEEDLE, scout_pos: Point2D, enemy: PyUnit, enemy_target, attack_range):
 
-    return ENEMY_NEEDLE * needle_pval(enemy.position, scout_pos, enemy.target_pos,
-                                      enemy.unit_type.attack_range * 1.0 / enemy.radius) * 2.5  # vene om ska ha 2.5 *
+    return ENEMY_NEEDLE * needle_pval(enemy.position, scout_pos, enemy_target.position,
+                                      attack_range * 1.0 / enemy.radius) * 2.5  # vene om ska ha 2.5 *
 
 # Like source/sink potential but the shape change to a direction
 
