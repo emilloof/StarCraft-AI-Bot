@@ -23,15 +23,19 @@ DEBUG_SCOUT = True
 USE_CHOKES = True
 # Use Hannes pathfinding
 USE_MOVE = False
+# Use Vincent potential flow scouting
+USE_PFSCOUT = True
 
 # Enable debugging (showing list of) enemies
 DEBUG_ENEMIES = False
 
-TIME_KEEP_ENEMY = 300
+TIME_KEEP_ENEMY = 200
 TIME_KEEP_ENEMY_BUILDING = 600
 
 # How many frames between actions
 FRAME_SKIP = 10
+# How many frames between scout actions update
+FRAME_SKIP_SCOUT = 1
 
 # How many frames until we invalidate cache
 FRAME_CLEAR_CACHE = 10

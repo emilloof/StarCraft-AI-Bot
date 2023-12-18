@@ -3,7 +3,7 @@ from typing import Union
 import library as pycc
 
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
-    BUILD_ORDER_PATH, USE_CHOKES, DEBUG_ENEMIES, FRAME_CLEAR_CACHE, USE_MOVE
+    BUILD_ORDER_PATH, USE_CHOKES, DEBUG_ENEMIES, FRAME_CLEAR_CACHE, USE_MOVE, USE_PFSCOUT
 from modules import BuildOrder, RegionManager, TaskManager, UnitCollection, PyBuildingPlacer, debugging as debug
 from modules.extra import unit_types_by_condition
 import bottlenecks as bottle    # Erik
@@ -49,6 +49,7 @@ class BasicAgent(pycc.IDABot):
         self.clear_cache_frame = 0
         self.region_manager: RegionManager = RegionManager(self)
         self.cache_functions: set[callable] = set()
+        self.cache_manager: {module: {callable:{'last_clear': int, 'max_count': int}}} = dict()
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
@@ -72,14 +73,14 @@ class BasicAgent(pycc.IDABot):
         return frozenset(base.position for base in self.base_location_manager.base_locations
                          if (not (base.is_player_start_location(pycc.PLAYER_SELF)
                                   or base.is_player_start_location(pycc.PLAYER_ENEMY))))
-    
+
     @cached_property
     def vertex_dict(self):
         # Safe-path init for vertex with all neccessary vertex data
         vertex_dict = {}
         for y in range(self.map_tools.height):
             for x in range(self.map_tools.width):
-                if(self.map_tools.is_walkable(x, y)):
+                if (self.map_tools.is_walkable(x, y)):
                     current_point = (x, y)
                     vertex_dict[current_point] = (vertex.Vertex(current_point))
         return vertex_dict
@@ -98,7 +99,8 @@ class BasicAgent(pycc.IDABot):
         if USE_MOVE:
             # init vertex_dict
             _ = self.vertex_dict
-
+        if USE_PFSCOUT:
+            self.region_manager.on_start()
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
@@ -161,7 +163,7 @@ class BasicAgent(pycc.IDABot):
             self.debugger.on_step()
             self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
 
-        if self.current_frame - self.clear_cache_frame >= FRAME_CLEAR_CACHE:
+        if (self.current_frame - self.clear_cache_frame) % FRAME_CLEAR_CACHE == 1:
             self.clear_cache_functions()
 
     def update_strategy(self):
@@ -170,9 +172,9 @@ class BasicAgent(pycc.IDABot):
             self, self.strategy, self.bayes_model, self.hp_tracker,
             self.strategy.get_hit_points(self), self.internal_minerals, self.current_frame,
             self.last_hp_diff)
-        print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
+        # print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
         # exit()
-    
+
     def clear_cache_functions(self):
         self.clear_cache_frame = self.current_frame
         for func in self.cache_functions:
@@ -180,14 +182,13 @@ class BasicAgent(pycc.IDABot):
                 func.cache_clear()
             else:
                 del func
-        del self.non_start_bases_positions
 
-    
     def update_supply_depots(self):
-        for bott in self.BOTTLENECKS:    # ERIK
-            for tile in bott:
-                self.map_tools.draw_tile(tile, pycc.Color.BLUE)
-        
+        if DEBUG_VISUAL:
+            for bott in self.BOTTLENECKS:    # ERIK
+                for tile in bott:
+                    self.map_tools.draw_tile(tile, pycc.Color.BLUE)
+
         all_friendly = set(u for u in self.unit_collection.py_units.values()
                            if u.player == pycc.PLAYER_SELF)
         all_supply_depots = {
@@ -209,7 +210,6 @@ class BasicAgent(pycc.IDABot):
                 supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_LOWER)
             else:
                 supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_RAISE)
-
 
     def set_up_debugging(self) -> None:
         """Set up visual debugger"""
