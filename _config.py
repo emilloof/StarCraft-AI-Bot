@@ -29,7 +29,7 @@ USE_PFSCOUT = True
 # Enable debugging (showing list of) enemies
 DEBUG_ENEMIES = False
 
-TIME_KEEP_ENEMY = 300
+TIME_KEEP_ENEMY = 200
 TIME_KEEP_ENEMY_BUILDING = 600
 
 # How many frames between actions

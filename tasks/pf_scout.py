@@ -91,7 +91,6 @@ class PFscout(Scout):
     # @profile(immediate=True)
     def do_pf(self, py_unit):
         # Control scout's movement using potential flow
-        # ic(self.agent.current_frame)
         self.move(py_unit)
 
         if DEBUG_SCOUT:
@@ -212,14 +211,13 @@ class PFscout(Scout):
         waypoint = get_closest(self.agent.region_manager.chokepoints_as_centers, enemy_start_pos)
         closest_choke = get_closest(self.agent.region_manager.chokepoints, py_unit.position,
                                     lambda c: c.center)
-        self.agent.map_tools.draw_circle(closest_choke.center, 0.25, Color.PURPLE)    # in json
         closest_choke = closest_choke.center
 
         cur_reg = self.agent.region_manager.get_region(py_unit.position)
         next_target_pos = get_closest(self.agent.non_start_bases_positions, enemy_start_pos)
         next_target_region = self.agent.region_manager.get_region(next_target_pos.as_tile())
         if (not self.switch_region and next_target_pos and closest_choke):
-                # and py_unit.position.distance(closest_choke) > CHOKE_DIST):
+            # and py_unit.position.distance(closest_choke) > CHOKE_DIST):
             if cur_reg == enemy_start_region:
                 if (self.agent.current_frame > self.frame_since_switch + SECOND_IN_FRAMES * 40
                         and self.changed_region):
@@ -233,7 +231,7 @@ class PFscout(Scout):
             else:
                 self.normal_scout(py_unit, enemy_start_region, waypoint, enemy_start_pos)
         elif (next_target_pos and self.switch_region and closest_choke):
-              # and py_unit.position.square_distance(closest_choke) > CHOKE_DIST):
+            # and py_unit.position.square_distance(closest_choke) > CHOKE_DIST):
             if cur_reg == enemy_start_region:
                 if (self.agent.current_frame > self.frame_since_switch + SECOND_IN_FRAMES * 10
                         and cur_reg == next_target_region and self.changed_region):
@@ -260,8 +258,10 @@ class PFscout(Scout):
             self.target_region = next_target_region
             py_unit.move(next_target_pos)
 
-        if next_target_pos:
-            self.agent.map_tools.draw_circle(next_target_pos, 5, Color(255, 165, 0))
+        if DEBUG_SCOUT:
+            self.agent.map_tools.draw_circle(closest_choke, 0.25, Color.PURPLE)
+            if next_target_pos:
+                self.agent.map_tools.draw_circle(next_target_pos, 5, Color(255, 165, 0))
 
     def normal_scout(self, py_unit, enemy_start_region, waypoint, enemy_start_pos):
         self.target_region = enemy_start_region

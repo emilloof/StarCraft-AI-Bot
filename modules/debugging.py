@@ -122,8 +122,7 @@ def debug_map(agent: BasicAgent) -> None:
     if not USE_CHOKES:
         return
     heat_map = []
-    bottle_tiles = self.BOTTLENECKS
-    #print(bottle_tiles)
+    bottle_tiles = agent.BOTTLENECKS
     for y in range(agent.map_tools.height):
         heat_map_row = []
         for x in range(agent.map_tools.width):

@@ -14,6 +14,7 @@ from tasks.task import Idle, Status
 from modules.potential_flow.vector import Vector
 from profilehooks import profile
 from modules.cache_manager import add_expire_instance, add_expire_function, update_my_functions
+from config import USE_PFSCOUT
 
 
 class PyUnit:
@@ -92,7 +93,8 @@ class PyUnit:
             status = self.task.on_step(self)
             if status.is_fail():
                 status = self.task.on_fail(self, status)
-            update_my_functions(self.agent, self)
+            if USE_PFSCOUT:
+                update_my_functions(self.agent, self)
         else:
             status = Status.FAIL_DEAD
         return status

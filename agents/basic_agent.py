@@ -163,7 +163,7 @@ class BasicAgent(pycc.IDABot):
             self.debugger.on_step()
             self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
 
-        if self.current_frame - self.clear_cache_frame >= FRAME_CLEAR_CACHE:
+        if (self.current_frame - self.clear_cache_frame) % FRAME_CLEAR_CACHE == 1:
             self.clear_cache_functions()
 
     def update_strategy(self):
@@ -182,12 +182,12 @@ class BasicAgent(pycc.IDABot):
                 func.cache_clear()
             else:
                 del func
-        del self.non_start_bases_positions
 
     def update_supply_depots(self):
-        for bott in self.BOTTLENECKS:    # ERIK
-            for tile in bott:
-                self.map_tools.draw_tile(tile, pycc.Color.BLUE)
+        if DEBUG_VISUAL:
+            for bott in self.BOTTLENECKS:    # ERIK
+                for tile in bott:
+                    self.map_tools.draw_tile(tile, pycc.Color.BLUE)
 
         all_friendly = set(u for u in self.unit_collection.py_units.values()
                            if u.player == pycc.PLAYER_SELF)
