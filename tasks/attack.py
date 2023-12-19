@@ -26,7 +26,6 @@ class Attack(Task):
 
         :return: Status.DONE if the task was started, Status.FAIL if task target is not Point2D.
         """
-        print("attack started")
         # Target is a coordinate
         if isinstance(self.target, Point2D):
             py_unit.move(self.target)
@@ -41,7 +40,6 @@ class Attack(Task):
         :return: Status.DONE if the unit is idle. Status.FAIL if the unit is dead. Otherwise returns Status.NOT_DONE.
         """
         if py_unit.is_idle:
-            print("idle")
             if py_unit.kite:
                 py_unit.kite = False
                 py_unit.move(self.target)

@@ -2,8 +2,9 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 from library import Color, Point2D, Point2DI, UNIT_TYPEID
+from config import DEBUG_SCOUT, OLD_ENEMIES_ENABLED
+from modules.extra import get_closest, get_enemies_in_neighbouring_tiles, get_enemies_in_radius
 from config import DEBUG_SCOUT
-from modules.extra import get_closest, get_enemies_in_radius
 
 from modules.potential_flow.flows import (
     enemy_pf,
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 
 
 def region_pval(scout: PFscout, scout_unit: PyUnit, target_region: Region) -> Vector:
-    cur_reg = scout.agent.region_manager.get_region(scout_unit.position)
+    cur_reg = scout.agent.region_manager.get_region(scout_unit.tile_position)
     cur_reg_center = cur_reg.center
     d2_center = cur_reg_center.distance(scout_unit.position)
 
@@ -64,7 +65,7 @@ def border_pval(scout: PFscout, scout_unit: PyUnit, cur_region: Region, target_r
     border_co = len(detail_border) / (math.pi * 14)
     scout.DISTANCE_TO_ACTIVE_BORDER_FLOW = max(border_co, 3)
     src_correction = 1 \
-        if scout.agent.region_manager.get_region(scout_unit.position) == target_reg else 0
+        if scout.agent.region_manager.get_region(scout_unit.tile_position) == target_reg else 0
     chokepoint = get_closest(scout.agent.region_manager.chokepoints_as_centers, scout_position)
     inactive_border = scout_position.distance(chokepoint) < scout.DISTANCE_TO_ACTIVE_BORDER_FLOW + 4
 
@@ -103,6 +104,7 @@ def attract_point_pval(scout: PFscout, scout_unit: PyUnit):
     for p in scout.attract_points:
         if DEBUG_SCOUT:
             scout.region_potentials.append(source_potential(p, pos) * (-32))    # * 100
+            scout.agent.map_tools.draw_text(p, "at", Color(255, 165, 0))  # orange
         re += source_potential(p, pos) * (-32)
     return re
 
@@ -112,7 +114,7 @@ def attract_point_pval(scout: PFscout, scout_unit: PyUnit):
 def unit_pval(scout: PFscout, enemy: PyUnit, scout_unit: PyUnit):
     enemy_type = enemy.unit_type
     scout_pos = scout_unit.position
-    region = scout.agent.region_manager.get_region(scout_unit.position)
+    region = scout.agent.region_manager.get_region(scout_unit.tile_position)
     center = None
 
     if DEBUG_SCOUT:
@@ -151,7 +153,7 @@ def unit_pval(scout: PFscout, enemy: PyUnit, scout_unit: PyUnit):
         # If is can ttacking enemy unit or worker who aim at our scout's position
 
         attack_range = enemy_type.attack_range + 1
-        if enemy_target:
+        if enemy_target == scout_unit:
             return enemy_pf(scout.ENEMY_NEEDLE, scout_pos, enemy, enemy_target, attack_range)
         else:
             return source_potential(enemy.position, scout_pos) * scout.ENEMY_NEEDLE \
@@ -163,7 +165,7 @@ def unit_pval(scout: PFscout, enemy: PyUnit, scout_unit: PyUnit):
 
 
 def calculate_pval(scout: PFscout, scout_unit: PyUnit):
-    cur_region = scout.agent.region_manager.get_region(scout_unit.position)
+    cur_region = scout.agent.region_manager.get_region(scout_unit.tile_position)
 
     pval = Vector()
 
@@ -181,8 +183,16 @@ def calculate_pval(scout: PFscout, scout_unit: PyUnit):
     """ TODO: * now its getting enemies in radius and previously
     seen enemies (REGARDLESS OF RADIUS):
     so prob wrong"""
-    enemies = get_enemies_in_radius(scout.agent, scout_unit.position,
-                                    scout_unit.unit_type.sight_range + 2)
+    
+    enemies = (
+        get_enemies_in_neighbouring_tiles(
+            scout.agent, scout_unit.tile_position, fast=False, dist=scout_unit.unit_type.sight_range + 2
+        )
+        if not OLD_ENEMIES_ENABLED
+        else get_enemies_in_radius(
+            scout.agent, scout_unit.position, scout_unit.unit_type.sight_range + 2
+        )
+    )
     scout.register_enemy_positions(enemies)
 
     # Calculate unitPVal
@@ -196,7 +206,8 @@ def calculate_pval(scout: PFscout, scout_unit: PyUnit):
             pval += enemy_pval
 
             if DEBUG_SCOUT:
-                obstacles.add((enemy, enemy.unit_type.attack_range))
+                pass
+                # obstacles.add((enemy, enemy.unit_type.attack_range))
 
         else:
             # obstacle
@@ -238,8 +249,11 @@ def calculate_pval(scout: PFscout, scout_unit: PyUnit):
             curr_border_pval)    # _all_potentials_ithink.append(curr_border_pval * 100)
         scout.all_potentials = all_potentials
 
-    att_tmp = attract_point_pval(scout, scout_unit)
-    pval += att_tmp
+    if scout.USE_ATTRACT_PVAL:
+        att_tmp = attract_point_pval(scout, scout_unit)
+        pval += att_tmp
+    else:
+        att_tmp = Vector()
 
     # Checking if enemy infront of us
     if enemy_direction.length() > 0:
@@ -252,7 +266,8 @@ def calculate_pval(scout: PFscout, scout_unit: PyUnit):
             if (cos_enemy < -0.5 and enemy_num >= 3) or (cos_enemy < -0.85) \
                     or curr_border_pval.cos(att_tmp) < -0.5:
                 # reverse vals
-                ic("REVERSE!")
+                if DEBUG_SCOUT:
+                    ic("scout REVERSE!")
                 # THIS DOES NOT WORK, TODO: FIX *
                 #if scout.agent.current_frame - scout.last_reverse_frame > 10:
                 if True:

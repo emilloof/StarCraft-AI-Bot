@@ -1,9 +1,10 @@
 from modules.unit_collection import UnitCollection
 from modules.py_unit import PyUnit
-from library import PLAYER_SELF, PLAYER_ENEMY, PLAYER_NEUTRAL, UNIT_TYPEID, Unit, TechTree, UnitType, UPGRADE_ID
+from library import PLAYER_SELF, Unit, UPGRADE_ID
 from pgmpy.models import  BayesianNetwork
 from pgmpy.factors.discrete import TabularCPD
 from pgmpy.inference import VariableElimination
+from config import DEBUG_BAYESIAN
 
 
 
@@ -124,9 +125,11 @@ class Strategy:
         strategy_model.add_cpds(cpd_gametime_under_2700_tick, cpd_building_lost_defence, cpd_many_minerals, cpd_enemy_offensive, 
                                 cpd_offensive, cpd_defensive, cpd_expansive, cpd_enemy_attack_last_675_tick)
         strategy_model.check_model()
-        print("Bayes model OK")
-        print("Nodes in the model: ", strategy_model.nodes())
-        print("Edges in the model: ", strategy_model.edges())
+
+        if DEBUG_BAYESIAN:
+            print("Bayes model OK")
+            print("Nodes in the model: ", strategy_model.nodes())
+            print("Edges in the model: ", strategy_model.edges())
 
         return strategy_model
     
@@ -170,7 +173,8 @@ class Strategy:
         # best_strat[1] is the value given from the bayes network
         best_strat = ['', 0]
         for strat in strats:
-            print(strat.variables[0], " ", strat.values[1])
+            if DEBUG_BAYESIAN:
+                print(strat.variables[0], " ", strat.values[1])
             if strat.values[1] > best_strat[1]:
                 best_strat[0] = strat.variables[0]
                 # Truth value
@@ -212,8 +216,9 @@ class Strategy:
             #print(pyunit.unit_type.unit_typeid)
             #exit()
             if pyunit.unit_type.name in OFFENSIVE_UNITS:
-                print(pyunit.unit_type.unit_typeid)
-                print(UPGRADE_ID.MARINESTIMPACK)
+                if DEBUG_BAYESIAN:
+                    print(pyunit.unit_type.unit_typeid)
+                    print(UPGRADE_ID.MARINESTIMPACK)
                 units += 1
         if units > 25:
             return 1

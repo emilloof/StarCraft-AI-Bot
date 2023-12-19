@@ -59,7 +59,6 @@ class PyUnit:
         return PLAYER_ENEMY in self.groups
 
     @cache
-    @profile(immediate=True)
     def get_target(self):
         return self.target
 
@@ -92,6 +91,9 @@ class PyUnit:
         if self.is_alive:
             status = self.task.on_step(self)
             if status.is_fail():
+                from tasks.pf_scout import PFscout
+                if isinstance(self.task, PFscout):
+                    print("PFscout failed")
                 status = self.task.on_fail(self, status)
             if USE_PFSCOUT:
                 update_my_functions(self.agent, self)

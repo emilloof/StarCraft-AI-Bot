@@ -60,17 +60,18 @@ def print_gate_tiles(bottle_tiles: list, heat_map_row: list, x: int, y: int) -> 
 
 
 def debug_regions(agent: BasicAgent) -> None:
-    regions: set[Region] = {region.tiles_as_tuples for region in agent.regions}
-    rmap = regions_debug(regions)
-    for region in regions:
-        center = calc_center(region[0])
-        center = tuple(map(int, center))
-        # ic(center)
-        rmap[center] = 15
-
-    agent.debugger.set_display_values(
-        rmap, (agent.map_tools.width, agent.map_tools.height)
-    )
+    regions = [region.tiles_as_tuples for region in agent.region_manager.regions]
+    # rmap = regions_debug(regions)
+    rmap = dict()
+    for y in range(agent.map_tools.height):
+        for x in range(agent.map_tools.width):
+            tile = Point2DI(x, y)
+            if agent.map_tools.is_walkable(x, y) or tile in agent.region_manager.terrain_borders:
+                color = agent.region_manager.get_region(tile).id
+                rmap[(x, y)] = color
+    if agent.scout_tile:
+        rmap[(agent.scout_tile.x, agent.scout_tile.y)] = 1
+    agent.debugger.set_display_values(rmap)
 
 
 def debug_region_borders(agent: BasicAgent) -> None:

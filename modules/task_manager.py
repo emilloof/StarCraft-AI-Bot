@@ -14,6 +14,7 @@ from tasks.gather_minerals import GatherMinerals
 from tasks.gather_gas import GatherGas
 from tasks.build import Build
 from tasks.scout import Scout
+from tasks.pf_scout import PFscout
 from tasks.attack import Attack
 from tasks.move import Move
 from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID
@@ -84,7 +85,6 @@ class TaskManager:
         self.agent = agent
         self.task_queue = TaskCollection()
         self.have_attacked = 0
-        self.scout_type = (PFscout, self.improved_scout) if USE_PFSCOUT else (Scout, self.scout)
 
     def on_step(self, new_units: list[PyUnit]) -> None:
         """
@@ -116,10 +116,12 @@ class TaskManager:
         if USE_MOVE:
             self.move()
         else:
+            #pass
             self.attack()
-        # check if we need to scout
-        if not any(isinstance(task, self.scout_type[0]) for task in self.current_tasks.tasks):
-            self.scout_type[1]() # run improved_scout() or scout()
+        if USE_PFSCOUT and not any(isinstance(task, PFscout) for task in self.current_tasks.tasks):
+            self.improved_scout()
+        elif self.agent.current_frame == 1:
+            self.scout()
 
     def gather(self) -> None:
         """

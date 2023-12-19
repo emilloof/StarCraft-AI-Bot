@@ -11,6 +11,7 @@ if __name__ == "__main__":
     run_sc2(
         bot1=BasicAgent(),
         race1=Race.Terran,
+        race2=Race.Terran,
         maps=MAPS,
         real_time=False)
 

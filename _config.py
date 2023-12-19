@@ -19,6 +19,17 @@ DEBUG_UNIT = False
 DEBUG_VISUAL = False
 # Enable scout debugger
 DEBUG_SCOUT = True
+# Enable Debug of David's Bayesian strategy
+DEBUG_BAYESIAN = False
+# Enable debugging (showing list of) enemies
+DEBUG_ENEMIES = False
+
+# How many frames between actions
+FRAME_SKIP = 10
+
+# Path to build order
+BUILD_ORDER_PATH = "builds/labs_build_order"
+
 # Use eriks chokepoints
 USE_CHOKES = True
 # Use Hannes pathfinding
@@ -26,19 +37,9 @@ USE_MOVE = False
 # Use Vincent potential flow scouting
 USE_PFSCOUT = True
 
-# Enable debugging (showing list of) enemies
-DEBUG_ENEMIES = False
-
+# --- Scouting vars used by Vincent ---
 TIME_KEEP_ENEMY = 200
 TIME_KEEP_ENEMY_BUILDING = 600
-
-# How many frames between actions
-FRAME_SKIP = 10
-# How many frames between scout actions update
-FRAME_SKIP_SCOUT = 1
-
-# How many frames until we invalidate cache
-FRAME_CLEAR_CACHE = 10
-
-# Path to build order
-BUILD_ORDER_PATH = "builds/labs_build_order"
+FRAME_SKIP_SCOUT = 1 # How many frames between scout actions update
+FRAME_CLEAR_CACHE = 10 # How many frames until we invalidate cache
+OLD_ENEMIES_ENABLED = False

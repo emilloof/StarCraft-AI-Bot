@@ -162,9 +162,14 @@ def unit_types_by_condition(agent: BasicAgent, condition: callable) -> set[UNIT_
     return {unit_typeid for unit_typeid in vars(UNIT_TYPEID).values() if
             isinstance(unit_typeid, UNIT_TYPEID) and condition(UnitType(unit_typeid, agent))}
 
+@cache
+def get_town_hall_unit_types(agent: BasicAgent) -> set[UnitType]:
+    """Returns all town hall unit types."""
+    return frozenset(UnitType(unit_type_id, agent) for unit_type_id in {UNIT_TYPEID.ZERG_HATCHERY, UNIT_TYPEID.TERRAN_COMMANDCENTER, UNIT_TYPEID.PROTOSS_NEXUS})
+
 
 @singledispatch
-def get_neighbours(pos: Point2DI, agent: BasicAgent) -> list[Point2DI]:
+def get_adjacent_neighbours(pos: Point2DI, agent: BasicAgent) -> list[Point2DI]:
     x = pos.x
     y = pos.y
     return [
@@ -174,11 +179,37 @@ def get_neighbours(pos: Point2DI, agent: BasicAgent) -> list[Point2DI]:
         Point2DI(x, y + 1) if y < agent.map_tools.height - 1 else None  # down
     ]
 
+def get_all_neighbours(x, y):
+    neighbours = []
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            if dx != 0 or dy != 0:  # Exclude the unit itself
+                neighbours.append((x + dx, y + dy))
+    return neighbours
 
-@get_neighbours.register(tuple)
+@cache
+def get_neighbours_within_distance(pos: Point2DI, distance: int = 3, ordered = False) -> tuple[Point2DI]:
+    if not isinstance(pos, Point2DI):
+        raise TypeError(f"pos must be of type Point2DI, not {type(pos)}")
+    x = pos.x
+    y = pos.y
+    neighbours = set() if not ordered else [set() for _ in range(distance)]
+    for dy in range(-distance, distance + 1):
+        for dx in range(-distance, distance + 1):
+            if dx != 0 or dy != 0:  # Exclude the unit itself
+                nbr = Point2DI(x + dx, y + dy)
+                if ordered:
+                    index = max(abs(dx), abs(dy)) # [2, 3] -> 3, [1, 1] -> 2
+                    index -= 1  # [3] -> [2] (since dist=3 -> [0,1,2]) 
+                    neighbours[index].add(nbr)
+                else:
+                    neighbours.add(nbr)
+    return frozenset(neighbours) if not ordered else tuple(neighbours)
+
+@get_adjacent_neighbours.register(tuple)
 def _(pos: tuple, agent: BasicAgent) -> list[tuple]:
     # {Point2DI(x, y), ...} -> {(x, y), ...}
-    return set(map(lambda pos: (pos.x, pos.y), get_neighbours(Point2DI(pos[0], pos[1]), agent)))
+    return set(map(lambda pos: (pos.x, pos.y), get_adjacent_neighbours(Point2DI(pos[0], pos[1]), agent)))
 
 
 def get_units_in_radius(agent: BasicAgent,
@@ -190,6 +221,15 @@ def get_units_in_radius(agent: BasicAgent,
     return agent.unit_collection.get_group(
         lambda unit: position.distance(unit.position) <= radius and condition(unit))
 
+def get_enemies_in_neighbouring_tiles(agent: BasicAgent, tile_pos: Point2DI, fast: bool = False, dist = None) -> set[PyUnit]:
+    """Returns a list of enemy units within a given radius of a given tile_position.
+    Optional update of accurate to use get_all_units() instead of using unit collection."""
+    neighbours = get_neighbours_within_distance(tile_pos, dist) if dist else get_neighbours_within_distance(tile_pos)
+    if fast:
+        pass
+        # return {unit for unit in agent.get_all_units() if unit.tile_position in neighbours and unit.player == PLAYER_ENEMY}
+    return agent.unit_collection.get_group(lambda unit: unit.tile_position in neighbours and unit.player == PLAYER_ENEMY and unit.can_attack)
+
 
 def get_friendly_in_radius(agent: BasicAgent, position: Point2D, radius: int) -> set[PyUnit]:
     """Returns a list of friendly units within a given radius of a given position."""
@@ -199,6 +239,11 @@ def get_friendly_in_radius(agent: BasicAgent, position: Point2D, radius: int) ->
 def get_enemies_in_radius(agent: BasicAgent, position: Point2D, radius: int) -> set[PyUnit]:
     """Returns a list of enemy units within a given radius of a given position."""
     return get_units_in_radius(agent, position, radius, lambda unit: unit.player == PLAYER_ENEMY)
+
+def get_enemies_in_base_location(agent: BasicAgent, base_location: BaseLocation) -> set[PyUnit]:
+    """Returns a list of enemy units within a given base location."""
+    # alt: use agent.get_all_units()..
+    return agent.unit_collection.get_group(lambda unit: base_location.contains_position(unit.position) and unit.player == PLAYER_ENEMY)
 
 
 @cache

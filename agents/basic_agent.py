@@ -3,7 +3,7 @@ from typing import Union
 import library as pycc
 
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
-    BUILD_ORDER_PATH, USE_CHOKES, DEBUG_ENEMIES, FRAME_CLEAR_CACHE, USE_MOVE, USE_PFSCOUT
+    BUILD_ORDER_PATH, USE_CHOKES, DEBUG_ENEMIES, FRAME_CLEAR_CACHE, USE_MOVE, USE_PFSCOUT, DEBUG_SCOUT
 from modules import BuildOrder, RegionManager, TaskManager, UnitCollection, PyBuildingPlacer, debugging as debug
 from modules.extra import unit_types_by_condition
 import bottlenecks as bottle    # Erik
@@ -46,10 +46,11 @@ class BasicAgent(pycc.IDABot):
         self.last_hp_diff = 0
 
         # Vincent
-        self.clear_cache_frame = 0
-        self.region_manager: RegionManager = RegionManager(self)
-        self.cache_functions: set[callable] = set()
-        self.cache_manager: {module: {callable:{'last_clear': int, 'max_count': int}}} = dict()
+        if USE_PFSCOUT:
+            self.clear_cache_frame = 0
+            self.region_manager: RegionManager = RegionManager(self)
+            self.cache_functions: set[callable] = set()
+            self.cache_manager: {module: {callable:{'last_clear': int, 'max_count': int}}} = dict()
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
@@ -62,15 +63,16 @@ class BasicAgent(pycc.IDABot):
         self.COMBAT_TYPES = set()
 
         if DEBUG_VISUAL:
-            self.debugger: Union[HeatMapDebugger, PathDebugger] = HeatMapDebugger()
+            self.scout_tile = None
+            self.debugger: Union[HeatMapDebugger, PathDebugger] = PathDebugger()
 
         if DEBUG_LOGS:
             self.timer = TicToc(prints=DEBUG_CONSOLE)
             self.logger = Logger()
 
     @cached_property
-    def non_start_bases_positions(self) -> frozenset:
-        return frozenset(base.position for base in self.base_location_manager.base_locations
+    def non_start_bases(self) -> frozenset:
+        return frozenset(base for base in self.base_location_manager.base_locations
                          if (not (base.is_player_start_location(pycc.PLAYER_SELF)
                                   or base.is_player_start_location(pycc.PLAYER_ENEMY))))
 
@@ -92,6 +94,8 @@ class BasicAgent(pycc.IDABot):
         self.WORKER_TYPES = unit_types_by_condition(self, lambda u: u.is_worker)
         self.COMBAT_TYPES = unit_types_by_condition(self, lambda u: u.is_combat_unit)
 
+        ic(f"race: {self.get_player_race(pycc.PLAYER_ENEMY)}")
+
         start_base_pos = self.base_location_manager.get_player_starting_base_location(
             pycc.PLAYER_SELF).position
         if USE_CHOKES:
@@ -101,6 +105,7 @@ class BasicAgent(pycc.IDABot):
             _ = self.vertex_dict
         if USE_PFSCOUT:
             self.region_manager.on_start()
+            _ = self.non_start_bases # init non_start_bases
         if DEBUG_VISUAL:
             self.set_up_debugging()
             self.debugger.on_start()
@@ -123,10 +128,10 @@ class BasicAgent(pycc.IDABot):
             self.internal_minerals = self.minerals
             self.internal_supply = self.current_supply
 
-            self.unit_collection.on_step()
-
             if USE_CHOKES:
                 self.update_supply_depots()
+        
+        self.unit_collection.on_step()    
 
         if self.current_frame % FRAME_SKIP == 1:
             new_units = [
@@ -160,8 +165,12 @@ class BasicAgent(pycc.IDABot):
             debug.debug_enemies(self)
             debug.debug_enemies_text(self)
         if DEBUG_VISUAL:
-            self.debugger.on_step()
+            self.debugger.on_step(lambda: debug.debug_regions(self))
             self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
+        if DEBUG_SCOUT:
+            from modules.potential_flow.regions import calc_center
+            for region in self.region_manager.regions:
+                self.map_tools.draw_text(region.center, "dpc", pycc.Color.WHITE)
 
         if (self.current_frame - self.clear_cache_frame) % FRAME_CLEAR_CACHE == 1:
             self.clear_cache_functions()
