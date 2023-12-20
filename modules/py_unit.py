@@ -12,7 +12,6 @@ from .extra import get_closest, get_friendly_in_radius
 from functools import cached_property, cache
 from tasks.task import Idle, Status
 from modules.potential_flow.vector import Vector
-from profilehooks import profile
 from modules.cache_manager import add_expire_instance, add_expire_function, update_my_functions
 from config import USE_PFSCOUT
 
@@ -59,7 +58,6 @@ class PyUnit:
         return PLAYER_ENEMY in self.groups
 
     @cache
-    @profile(immediate=True)
     def get_target(self):
         return self.target
 

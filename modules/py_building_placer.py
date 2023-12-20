@@ -62,16 +62,15 @@ class PyBuildingPlacer:
                     return self.agent.unit_collection.get_py_unit(geyser.id)
         return None
 
-    def find_walloff_position(self, type_to_build: UnitType) -> Point2DI:   # Gjord av ERIk
+    def find_walloff_position(self, type_to_build: UnitType) -> Point2DI:
         """ Finds a location on a bottlenecks starting at the ones closest to the home base """
 
-        # All supply depots
         return_set = set(self.agent.unit_collection.py_units.values())
         new_set = {py_unit for py_unit in return_set if py_unit.unit_type.unit_typeid == (UNIT_TYPEID.TERRAN_SUPPLYDEPOT or UNIT_TYPEID.TERRAN_SUPPLYDEPOTLOWERED)}
         upcoming_supply_depots = [t.pos for t in
                     self.agent.task_manager.current_tasks.get_tasks(build.Build, None).union(
                         self.agent.task_manager.task_queue.get_tasks(build.Build, None)) if
-                    t.building_type.unit_typeid == (UNIT_TYPEID.TERRAN_SUPPLYDEPOT or UNIT_TYPEID.TERRAN_SUPPLYDEPOT) and t.pos]
+                    t.building_type.unit_typeid == (UNIT_TYPEID.TERRAN_SUPPLYDEPOT) and t.pos]
 
         for bottleneck in self.agent.BOTTLENECKS:
             for tile in bottleneck:
@@ -109,7 +108,7 @@ class PyBuildingPlacer:
                 # Recalculate next expansion position
                 pos = self.agent.base_location_manager.get_next_expansion(PLAYER_SELF).depot_position
                 return True, pos
-            if building_type.name == 'TERRAN_SUPPLYDEPOT':  # ERIK added
+            if building_type.name == 'TERRAN_SUPPLYDEPOT':
                 pos = self.agent.building_placer.get_build_location_near(pos, building_type, 0)
                 return True, pos
             # Find new build location near old build location
