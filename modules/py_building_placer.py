@@ -9,6 +9,13 @@ from typing import Optional
 from tasks import build
 from config import USE_CHOKES
 
+# FRÅGA  om funktion i basic agent
+# Fråga om hur man hämtar ut en unit_typeid och varför det blir samma för BARRACKS och SUPPLYDEPOTS
+
+# SVAR PÅ FRÅGOR: LÄgg sortering av flaskhalsar i bottlenecks. Gör bool check när man hämtar supply depots ("== TERRAN...."). 
+# Gör funktion i on_step i basic agent för sänkning och höjning av supply depots som kollar för varje supply depot om någon 
+# friendly unit är närmre än x meter (använd euclidian distance). Dock måste man också kolla om någon enemy är nära på något 
+# sätt men börja med friendly och se om det funkar. 
 
 # FRÅGA  om funktion i basic agent
 # Fråga om hur man hämtar ut en unit_typeid och varför det blir samma för BARRACKS och SUPPLYDEPOTS
@@ -60,6 +67,23 @@ class PyBuildingPlacer:
             for geyser in base_location.geysers:
                 if geyser.tile_position not in refineries + upcoming:
                     return self.agent.unit_collection.get_py_unit(geyser.id)
+        return None
+    
+    def find_walloff_position(self, type_to_build: UnitType) -> Point2DI:   # Gjord av ERIk
+        """ Finds a location on a bottlenecks starting at the ones closest to the home base """
+        
+        # All supply depots
+        return_set = set(self.agent.unit_collection.py_units.values())
+        new_set = {py_unit for py_unit in return_set if py_unit.unit_type.unit_typeid == (UNIT_TYPEID.TERRAN_SUPPLYDEPOT or UNIT_TYPEID.TERRAN_SUPPLYDEPOTLOWERED)}
+        upcoming_supply_depots = [t.pos for t in
+                    self.agent.task_manager.current_tasks.get_tasks(build.Build, None).union(
+                        self.agent.task_manager.task_queue.get_tasks(build.Build, None)) if
+                    t.building_type.unit_typeid == (UNIT_TYPEID.TERRAN_SUPPLYDEPOT or UNIT_TYPEID.TERRAN_SUPPLYDEPOT) and t.pos]
+
+        for bottleneck in self.agent.BOTTLENECKS:
+            for tile in bottleneck:
+                if tile not in list(new_set) + upcoming_supply_depots:
+                    return tile
         return None
 
     def find_walloff_position(self, type_to_build: UnitType) -> Point2DI:
