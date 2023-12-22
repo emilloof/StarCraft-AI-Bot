@@ -219,10 +219,9 @@ class TaskManager:
         """Generate tasks for moving units to a target position."""
         pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
         py_units = self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.is_combat_unit, Idle)
-        if(len(py_units) > 0):
-            for i in range(0, len(py_units)):
-                print("moveTask added to queue")   
-                self.task_queue.add(Move(pos, MOVE_PRIO, self.agent))
+        if(len(py_units) > 6):
+            #for i in range(0, 1):
+            self.task_queue.add(Move(pos, MOVE_PRIO, self.agent))
     
     def attack(self) -> None:
         """Generates attack tasks targeting the enemy starting base for every combat unit."""

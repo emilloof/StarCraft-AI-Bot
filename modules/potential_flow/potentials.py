@@ -265,7 +265,7 @@ def calculate_pval(scout: PFscout, scout_unit: PyUnit):
             if (cos_enemy < -0.5 and enemy_num >= 3) or (cos_enemy < -0.85) \
                     or curr_border_pval.cos(att_tmp) < -0.5:
                 # reverse vals
-                ic("REVERSE!")
+                #ic("REVERSE!")
                 scout.go *= -1
                 break
 

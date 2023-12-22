@@ -10,6 +10,7 @@ import bottlenecks as bottle    # Erik
 from modules.path_finding import vertex #For pathfinding - hanlu520
 
 
+
 # David
 from strategy import Strategy
 
@@ -50,6 +51,10 @@ class BasicAgent(pycc.IDABot):
         self.region_manager: RegionManager = RegionManager(self)
         self.cache_functions: set[callable] = set()
 
+        # Hannes
+        self.terrain_map = {}
+
+
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
             pycc.UNIT_TYPEID.TERRAN_ORBITALCOMMAND: (150, 0),
@@ -61,7 +66,7 @@ class BasicAgent(pycc.IDABot):
         self.COMBAT_TYPES = set()
 
         if DEBUG_VISUAL:
-            self.debugger: Union[HeatMapDebugger, PathDebugger] = HeatMapDebugger()
+            self.debugger: Union[HeatMapDebugger, PathDebugger] = PathDebugger()
 
         if DEBUG_LOGS:
             self.timer = TicToc(prints=DEBUG_CONSOLE)
@@ -82,7 +87,9 @@ class BasicAgent(pycc.IDABot):
                 if(self.map_tools.is_walkable(x, y)):
                     current_point = (x, y)
                     vertex_dict[current_point] = (vertex.Vertex(current_point))
+  
         return vertex_dict
+
 
     def on_game_start(self) -> None:
         """Runs on game start. Loads necessary data and generates settings"""
@@ -98,8 +105,11 @@ class BasicAgent(pycc.IDABot):
         if USE_MOVE:
             # init vertex_dict
             _ = self.vertex_dict
+   
 
         if DEBUG_VISUAL:
+            self.terrain_map = {(x, y): int(self.map_tools.is_walkable(pycc.Point2DI(x, y))) for x in range(self.map_tools.width) for y in range(self.map_tools.height)}
+
             self.set_up_debugging()
             self.debugger.on_start()
             self.debugger.on_step(lambda: debug.debug_map(self))
@@ -158,7 +168,7 @@ class BasicAgent(pycc.IDABot):
             debug.debug_enemies(self)
             debug.debug_enemies_text(self)
         if DEBUG_VISUAL:
-            self.debugger.on_step()
+            self.debugger.on_step(lambda: debug.debug_vertex_potential(self, self.vertex_dict[(72, 38)]))
             self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
 
         if self.current_frame - self.clear_cache_frame >= FRAME_CLEAR_CACHE:
