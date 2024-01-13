@@ -10,7 +10,6 @@ from modules.potential_flow.vector import Vector
 from tasks.task import Status
 from tasks.scout import Scout
 from modules.py_unit import PyUnit
-from profilehooks import profile
 
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
