@@ -193,6 +193,7 @@ def generate_bottleneck_bounds(agent: BasicAgent) -> list[list]:
 
 
 def pair_tiles(pairless_gate_tiles: list) -> list[list]:
+    """ Pairs sole start and end tiles """
 
     paired_tiles = []
     threshold = 17  # Magic number that can be changed after desire
