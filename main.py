@@ -13,6 +13,3 @@ if __name__ == "__main__":
         race1=Race.Terran,
         maps=MAPS,
         real_time=False)
-
- 
- 
