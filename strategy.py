@@ -26,9 +26,9 @@ UPGRADES = {'Offensive': [UPGRADE_ID.MARINESTIMPACK, UPGRADE_ID.REAPERSTIMPACK, 
             'Expansive': [UPGRADE_ID.MULE, UPGRADE_ID.TERRANBUILDINGARMOR]}
 
 # Define what units and structures a certain strategy should produce
-STRATEGYS = {'Offensive': {'TERRAN_MARINE': 8, 'TERRAN_REAPER': 5, 'TERRAN_HELLION': 2, 'upgrades': UPGRADES['Offensive']},
-             "Defensive": {'TERRAN_SIEGETANK': 2, 'TERRAN_HELLION': 2, 'TERRAN_WIDOWMINE': 2, 'TERRAN_CYCLONE': 2, 'TERRAN_BUNKER': 2, 'TERRAN_SENSORTOWER': 1, 'upgrades': UPGRADES['Defensive']},
-             'Expansive': {'TERRAN_COMMANDCENTER': 1, 'TERRAN_SUPPLYDEPOT': 1, 'TERRAN_BARRACKS': 1, 'TERRAN_FACTORY': 1,'TERRAN_SENSORTOWER': 1, 'upgrades': UPGRADES['Expansive']}}
+STRATEGYS = {'Offensive': {'TERRAN_MARINE': 16, 'TERRAN_REAPER': 8, 'TERRAN_HELLION': 8, 'upgrades': UPGRADES['Offensive']},
+             "Defensive": {'TERRAN_SIEGETANK': 6, 'TERRAN_HELLION': 6, 'TERRAN_WIDOWMINE': 6, 'TERRAN_CYCLONE': 6, 'TERRAN_BUNKER': 4, 'TERRAN_SENSORTOWER': 1, 'upgrades': UPGRADES['Defensive']},
+             'Expansive': {'TERRAN_COMMANDCENTER': 5, 'TERRAN_SUPPLYDEPOT': 20, 'TERRAN_BARRACKS': 5, 'TERRAN_FACTORY': 5,'TERRAN_SENSORTOWER': 5, 'upgrades': UPGRADES['Expansive']}}
 
 class Strategy:
     
