@@ -26,6 +26,9 @@ class PyUnit:
         self._last_weapon_cooldown = 0
         self.hp = unit.hit_points
         self.kite = False
+        
+        #Hannes
+        self.next = 0
 
         self.p_value = unit.unit_type.attack_range
         # time to keep the unit in knowledge base before determined old knowledge

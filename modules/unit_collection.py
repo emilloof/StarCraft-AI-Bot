@@ -10,6 +10,8 @@ from library import PLAYER_SELF, PLAYER_ENEMY, PLAYER_NEUTRAL, UNIT_TYPEID, Unit
 from modules.py_unit import PyUnit
 from tasks.task import Task
 
+import hashlib
+
 
 class UnitCollection:
     """A class to handle the connection between a library Unit and MyUnit, and handle unit groups."""
@@ -25,6 +27,20 @@ class UnitCollection:
         self.new_units_this_step: list[PyUnit] = []
 
         self.old_enemies: dict[Unit, PyUnit] = dict()
+
+        self.player_enemy_hash = self.hash_group(PLAYER_ENEMY)
+    
+
+    def hash_group(self, group_key):
+        group = self.groups.get(group_key, set())
+        return hashlib.md5(str(sorted([py_unit.id for py_unit in group])).encode()).hexdigest()
+
+    def player_enemy_group_updated(self):
+        current_hash = self.hash_group(PLAYER_ENEMY)
+        if current_hash != self.player_enemy_hash:
+            self.player_enemy_hash = current_hash
+            return True
+        return False
 
     def __iter__(self):
         for py_unit in self.py_units.values():

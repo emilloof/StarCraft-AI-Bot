@@ -53,7 +53,9 @@ class BasicAgent(pycc.IDABot):
 
         # Hannes
         self.terrain_map = {}
-
+        self.walkable_tiles = set()
+        self.safe_path = {}
+        self.used_vertexes = []
 
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
@@ -71,6 +73,14 @@ class BasicAgent(pycc.IDABot):
         if DEBUG_LOGS:
             self.timer = TicToc(prints=DEBUG_CONSOLE)
             self.logger = Logger()
+    @cached_property
+    def get_walkable_tiles(self):
+        for y in range(self.map_tools.height):
+            for x in range(self.map_tools.width):
+                if self.map_tools.is_walkable(x, y):
+                    self.walkable_tiles.add((x, y))
+        return self.walkable_tiles
+    
 
     @cached_property
     def non_start_bases_positions(self) -> frozenset:
@@ -84,11 +94,13 @@ class BasicAgent(pycc.IDABot):
         vertex_dict = {}
         for y in range(self.map_tools.height):
             for x in range(self.map_tools.width):
-                if(self.map_tools.is_walkable(x, y)):
-                    current_point = (x, y)
-                    vertex_dict[current_point] = (vertex.Vertex(current_point))
+                current_point = (x, y)
+                vertex_dict[current_point] = (vertex.Vertex(current_point))
   
         return vertex_dict
+    
+  
+    
 
 
     def on_game_start(self) -> None:
@@ -104,7 +116,9 @@ class BasicAgent(pycc.IDABot):
             self.BOTTLENECKS = bottle.get_bottlenecks(self, start_base_pos)    # ERIk
         if USE_MOVE:
             # init vertex_dict
+            __ = self.get_walkable_tiles
             _ = self.vertex_dict
+          
    
 
         if DEBUG_VISUAL:
@@ -236,12 +250,12 @@ class BasicAgent(pycc.IDABot):
             (7, 7): (0, 255, 255),
             (8, 8): (100, 100, 0),
             (9, 9): (0, 100, 100),
-            (10, 10): (100, 0, 100),
-            (11, 11): (100, 100, 255),
-            (12, 12): (100, 255, 100),
-            (13, 13): (255, 100, 100),
-            (14, 14): (255, 150, 100),
-            (15, 15): (100, 100, 100)
+            (95, 95): (100, 0, 100),
+            (96, 96): (100, 100, 255),
+            (97, 97): (100, 255, 100),
+            (98, 98): (255, 100, 100),
+            (99, 99): (255, 150, 100),
+            (100, 100): (100, 100, 100)
         }
         self.debugger.set_color_map(color_map)
 
@@ -268,3 +282,4 @@ class BasicAgent(pycc.IDABot):
         if isinstance(unit_type, pycc.UnitType) and unit_type.unit_typeid in self.UPGRADES:
             minerals, gas = self.UPGRADES[unit_type.unit_typeid]
         return minerals, gas, supply
+    
