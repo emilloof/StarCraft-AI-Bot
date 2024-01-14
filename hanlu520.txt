@@ -1,1 +1,5 @@
-
+Min kod finns i 
+- safe_move.py
+- helpers.py
+- a_star_temp.py
+Det finns även kod i basic_agent.py och taskmanager.py
