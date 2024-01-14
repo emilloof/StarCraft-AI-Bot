@@ -1,0 +1,11 @@
+Min kod finns i filerna:
+    - tasks\pf_scout.py.py
+    - modules\potential_flow
+        - flows.py
+        - potentials.py
+        - regions.py
+        - vector.py
+    - data
+    - extra.py (i princip alla funktioner som inte fanns där innan är skrivna av mig)
+    - modules\py_unit (många @property funktioner och andra ändringar för scouting)
+    - basic_agent.py
