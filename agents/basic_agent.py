@@ -50,6 +50,7 @@ class BasicAgent(pycc.IDABot):
         self.clear_cache_frame = 0
         self.region_manager: RegionManager = RegionManager(self)
         self.cache_functions: set[callable] = set()
+        self.cache_manager: {module: {callable:{'last_clear': int, 'max_count': int}}} = dict()
 
         # Hannes
         self.terrain_map = {}
