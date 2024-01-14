@@ -1,14 +1,19 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
-from math import cos, sin
+from math import cos, sin, pi
 
 if TYPE_CHECKING:
     from tasks.task import Task
     from library import Unit
     from agents.basic_agent import BasicAgent
+
 from library import Point2D, PLAYER_ENEMY
-from functools import cached_property
+from .extra import get_closest, get_friendly_in_radius
+from functools import cached_property, cache
 from tasks.task import Idle, Status
+from modules.potential_flow.vector import Vector
+from modules.cache_manager import add_expire_instance, add_expire_function, update_my_functions
+from config import USE_PFSCOUT
 
 
 class PyUnit:
@@ -34,6 +39,8 @@ class PyUnit:
         # time to keep the unit in knowledge base before determined old knowledge
         self.last_seen = last_seen
         self.fade_time = fade_time
+        add_expire_instance(self.agent, self)
+        add_expire_function(self.agent, self, self.get_target, 48)
         # TODO: Add previous known position, in case Unit.position does not work
 
     def __repr__(self):
@@ -53,18 +60,29 @@ class PyUnit:
         """Returns if unit is an enemy"""
         return PLAYER_ENEMY in self.groups
 
+    @cache
+    def get_target(self):
+        return self.target
+
     @property
-    def target_pos(self) -> Point2D:
-        """Returns the approximated of the unit"""
-        if self.is_enemy:
-            # (attack_range vs sight_range)?.
-            # prob use attackrange since scv.attack_range = 0.1, but marine.attack_range = 5
-            range_used = self.unit.unit_type.attack_range
-            target_x = self.unit.position.x + range_used * cos(self.unit.facing)
-            target_y = self.unit.position.y + range_used * sin(self.unit.facing)
-            return Point2D(target_x, target_y)
-        # else (not an enemy)
-        return self.unit.target.position
+    def target(self) -> Unit:
+        """Returns the unit's target"""
+        if not self.is_enemy:
+            return self.unit.target if self.has_target else None
+        # else (self.unit is an enemy)
+        # TODO: check if this (enemy unit) is doing an action/ability where it could even have the scout as target
+        if friendly_in_range := get_friendly_in_radius(self.agent, self.unit.position,
+                                                       self.unit.unit_type.sight_range):
+            # Filter units that are within a certain angle of the enemy unit's facing direction
+            friendly_facing = self.get_units_facing_unit(friendly_in_range)
+
+            if friendly_facing:
+                return get_closest(friendly_facing, self.unit.position, lambda u: u.position)
+
+    @cached_property
+    def can_attack(self) -> bool:
+        """Returns if unit_type can attack"""
+        return self.unit.unit_type.attack_damage > 0
 
     def on_step(self) -> Status:
         """
@@ -76,9 +94,15 @@ class PyUnit:
             status = self.task.on_step(self)
             if status.is_fail():
                 status = self.task.on_fail(self, status)
+            if USE_PFSCOUT:
+                update_my_functions(self.agent, self)
         else:
             status = Status.FAIL_DEAD
         return status
+
+    def get_units_facing_unit(self, units: set[PyUnit]) -> set[PyUnit]:
+        """Returns units that are within a certain angle of the unit's facing direction"""
+        return [u for u in units if abs(self.position.angle_to(u.position) - self.facing) < pi / 4]
 
     def on_death(self) -> None:
         """Handle unit death"""
@@ -120,7 +144,7 @@ class PyUnit:
         "PROTOSS_IMMORTAL": 1.45,
         "PROTOSS_VOIDRAY": 0.36,
         "PROTOSS_COLOSSUS": 2.21,
-        "PROTOSS_HIGHTEMPLAR": 0.001,  # High Templar's Feedback has no cooldown
+        "PROTOSS_HIGHTEMPLAR": 0.001,    # High Templar's Feedback has no cooldown
         "TERRAN_REAPER": 1.5,
         "TERRAN_BATTLECRUISER": 0.23,
         "ZERG_MUTALISK": 0.56,

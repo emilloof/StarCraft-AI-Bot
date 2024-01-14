@@ -12,4 +12,5 @@ if __name__ == "__main__":
         bot1=BasicAgent(),
         race1=Race.Terran,
         maps=MAPS,
+        maps=MAPS,
         real_time=False) 

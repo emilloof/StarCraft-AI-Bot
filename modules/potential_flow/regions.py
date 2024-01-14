@@ -11,27 +11,23 @@ from functools import cached_property, cache
 
 
 class Region:
+
     def __init__(self, agent, tiles: set[Point2DI], mid_point: Point2DI):
         self.agent = agent
         self.tiles = tiles
-        self.mid_point = mid_point  # not used currently
+        self.mid_point = mid_point    # not used currently
         self.mid_point_calculated = None
         self.tiles_as_tuples = {(pos.x, pos.y) for pos in tiles}
         self.base_locations: list[BaseLocation] = []
 
-        # init cached properties
+    def on_start(self):
         _ = self.border
         _ = self.center
         _ = self.base_locations
 
-    def on_start(self):
-        pass
-        # self.base_locations = calc_base_locations(self.agent, self.tiles)
-        # self.mid_point_calculated = calc_center(self.tiles)
-
     @cached_property
     def border(self):
-        border = frozenset()
+        border = set()
         for y in range(self.agent.map_tools.height):
             for x in range(self.agent.map_tools.width):
                 tile = Point2DI(x, y)
@@ -45,46 +41,57 @@ class Region:
         border -= {Point2DI(32, 119), Point2DI(31, 120), Point2DI(120, 47), Point2DI(119, 48)}
         border -= {Point2DI(32, 121), Point2DI(33, 120), Point2DI(118, 47), Point2DI(119, 46)}
         border -= {Point2DI(33, 122), Point2DI(34, 121), Point2DI(117, 46), Point2DI(118, 45)}
-        return border
+        return frozenset(border)
 
     @cached_property
     def center(self) -> Point2D:
         """Returns the center of the region"""
-        x = sum(pos.x for pos in self.tiles)
-        y = sum(pos.y for pos in self.tiles)
-        return Point2D(x / len(self.tiles), y / len(self.tiles))
+        return calc_center(self.tiles)
 
     @cached_property
     def base_locations(self) -> frozenset[BaseLocation]:
-        return frozenset(
-            base_location
-            for base_location in self.agent.base_location_manager.base_locations
-            if Point2DI(base_location.position) in self.tiles
-        )
+        return frozenset(base_location
+                         for base_location in self.agent.base_location_manager.base_locations
+                         if Point2DI(base_location.position) in self.tiles)
 
     @classmethod
     def parse_json(cls, agent: BasicAgent, json_obj: str):
         return cls(
             agent,
-            {Point2DI(pos["x"], pos["y"]) for pos in json_obj["tiles"]},
+            {Point2DI(pos["x"], pos["y"])
+             for pos in json_obj["tiles"]},
             Point2DI(json_obj["center"]["x"], json_obj["center"]["y"]),
         )
 
 
+def calc_center(tiles: set[Point2DI]) -> Point2DI:
+    """Returns the center of the region"""
+    x = sum(pos.x for pos in tiles)
+    y = sum(pos.y for pos in tiles)
+    return Point2D(x / len(tiles), y / len(tiles))
+
+
 class RegionManager:
+
     def __init__(self, agent: BasicAgent):
         self.agent = agent
-        self.regions: set[Region] = {Region.parse_json(self.agent, data)
-                                     for data in parse_json_objects("data/regions.json")}
+        self.regions: set[Region] = {
+            Region.parse_json(self.agent, data)
+            for data in parse_json_objects("data/regions.json")
+        }
         self.regions_as_centers = frozenset(region.center for region in self.regions)
 
-        self.chokepoints: frozenset[Chokepoint] = frozenset(Chokepoint.parse_json(
-            data) for data in parse_json_objects("data/chokepoints.json"))
-        self.chokepoints_as_centers = frozenset(
-            chokepoint.center for chokepoint in self.chokepoints)
+        self.chokepoints: frozenset[Chokepoint] = frozenset(
+            Chokepoint.parse_json(data) for data in parse_json_objects("data/chokepoints.json"))
+        self.chokepoints_as_centers = frozenset(chokepoint.center
+                                                for chokepoint in self.chokepoints)
 
         # init cached:
         _ = (self.get_region_by_center(region.center) for region in self.regions)
+    
+    def on_start(self):
+        for region in self.regions:
+            region.on_start()
 
     @cache
     def get_region_by_center(self, pos: Point2D) -> Region:
@@ -103,7 +110,6 @@ class RegionManager:
             return region
         # else
         return self.get_region_by_center(get_closest(self.regions_as_centers, pos))
-
         """tiles = [tile_of_interest] + get_neighbours(self.agent, tile_of_interest)
         for region in self.agent.regions:
             if any(tile in region.tiles for tile in tiles):
@@ -111,13 +117,19 @@ class RegionManager:
 
 
 class Chokepoint:
+
     def __init__(self, tiles: set[Point2DI], center: Point2DI):
         self.tiles: set[Point2DI] = tiles
-        self.center: set[Point2DI] = center
+        self.center_not_used: set[Point2DI] = center
+
+    @cached_property
+    def center(self):
+        return calc_center(self.tiles)
 
     @classmethod
     def parse_json(cls, json_obj: str):
-        return cls({Point2DI(int(pos["x"]), int(pos["y"])) for pos in json_obj["tiles"]},
+        return cls({Point2DI(int(pos["x"]), int(pos["y"]))
+                    for pos in json_obj["tiles"]},
                    Point2DI(int(json_obj["center"]["x"]), int(json_obj["center"]["y"])))
 
 

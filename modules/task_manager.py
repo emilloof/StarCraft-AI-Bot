@@ -19,7 +19,7 @@ from tasks.safe_move import SafeMove
 from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID
 from modules.extra import exists_producer_for, get_worker_type, has_prerequisites
 from queue import SimpleQueue
-from config import DEBUG_CONSOLE, USE_MOVE
+from config import DEBUG_CONSOLE, USE_MOVE, USE_PFSCOUT
 
 
 import random
@@ -89,6 +89,7 @@ class TaskManager:
         self.task_queue = TaskCollection()
         self.have_attacked = 0
         self.have_moved = 0
+        self.scout_type = (PFscout, self.improved_scout) if USE_PFSCOUT else (Scout, self.scout)
 
     def on_step(self, new_units: list[PyUnit]) -> None:
         """
@@ -121,8 +122,9 @@ class TaskManager:
             self.move()
         else:
             self.attack()
-        if self.agent.current_frame == 1:
-            self.improved_scout()  # self.scout()
+        # check if we need to scout
+        if not any(isinstance(task, self.scout_type[0]) for task in self.current_tasks.tasks):
+            self.scout_type[1]() # run improved_scout() or scout()
 
     def gather(self) -> None:
         """
@@ -307,7 +309,7 @@ class TaskManager:
             self.perform_task(py_unit)
 
     def perform_important_tasks(self) -> None:
-        """Calls important units tasks on_step (i.e. scout)"""
+        """Calls important units tasks on_step (i.e. pf scout)"""
         for py_unit in self.agent.unit_collection.get_group(
                 PLAYER_SELF, lambda u: u.task.is_high_freq):
             # maybe just use: return scout_py_unit *?

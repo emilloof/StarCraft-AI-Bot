@@ -3,7 +3,7 @@ from typing import Union
 import library as pycc
 
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
-    BUILD_ORDER_PATH, USE_CHOKES, DEBUG_ENEMIES, FRAME_CLEAR_CACHE, USE_MOVE
+    BUILD_ORDER_PATH, USE_CHOKES, DEBUG_ENEMIES, FRAME_CLEAR_CACHE, USE_MOVE, USE_PFSCOUT
 from modules import BuildOrder, RegionManager, TaskManager, UnitCollection, PyBuildingPlacer, debugging as debug
 from modules.extra import unit_types_by_condition
 import bottlenecks as bottle    # Erik
@@ -87,7 +87,7 @@ class BasicAgent(pycc.IDABot):
         return frozenset(base.position for base in self.base_location_manager.base_locations
                          if (not (base.is_player_start_location(pycc.PLAYER_SELF)
                                   or base.is_player_start_location(pycc.PLAYER_ENEMY))))
-    
+
     @cached_property
     def vertex_dict(self):
         # Safe-path init for vertex with all neccessary vertex data
@@ -118,15 +118,14 @@ class BasicAgent(pycc.IDABot):
             # init vertex_dict
             __ = self.get_walkable_tiles
             _ = self.vertex_dict
-          
-   
-
+        if USE_PFSCOUT:
+            self.region_manager.on_start()
         if DEBUG_VISUAL:
             self.terrain_map = {(x, y): int(self.map_tools.is_walkable(pycc.Point2DI(x, y))) for x in range(self.map_tools.width) for y in range(self.map_tools.height)}
 
             self.set_up_debugging()
             self.debugger.on_start()
-            self.debugger.on_step(lambda: debug.debug_map(self))
+            self.debugger.on_step(lambda: debug.debug_map(self))  
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
 
@@ -185,7 +184,7 @@ class BasicAgent(pycc.IDABot):
             self.debugger.on_step(lambda: debug.debug_vertex_potential(self, self.vertex_dict[(72, 38)]))
             self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
 
-        if self.current_frame - self.clear_cache_frame >= FRAME_CLEAR_CACHE:
+        if (self.current_frame - self.clear_cache_frame) % FRAME_CLEAR_CACHE == 1:
             self.clear_cache_functions()
 
     def update_strategy(self):
@@ -196,7 +195,7 @@ class BasicAgent(pycc.IDABot):
             self.last_hp_diff)
         #print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
         # exit()
-    
+
     def clear_cache_functions(self):
         self.clear_cache_frame = self.current_frame
         for func in self.cache_functions:
@@ -204,36 +203,32 @@ class BasicAgent(pycc.IDABot):
                 func.cache_clear()
             else:
                 del func
-        del self.non_start_bases_positions
 
-    
     def update_supply_depots(self):
-        for bott in self.BOTTLENECKS:    # ERIK
-            for tile in bott:
-                self.map_tools.draw_tile(tile, pycc.Color.BLUE)
-        
+        if DEBUG_VISUAL:
+            for bott in self.BOTTLENECKS:  
+                for tile in bott:
+                    self.map_tools.draw_tile(tile, pycc.Color.BLUE)
+
         all_friendly = set(u for u in self.unit_collection.py_units.values()
                            if u.player == pycc.PLAYER_SELF)
+        all_enemies = set(u for u in self.unit_collection.py_units.values()
+                           if u.player == pycc.PLAYER_ENEMY)
         all_supply_depots = {
             py_unit
             for py_unit in all_friendly
             if py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOT
             or py_unit.unit_type.unit_typeid == pycc.UNIT_TYPEID.TERRAN_SUPPLYDEPOTLOWERED
         }
-        all_friendly_units = {
-            py_unit
-            for py_unit in all_friendly
-            if py_unit.unit_type.is_worker or py_unit.unit_type.is_combat_unit
-        }
+      
         for supply_depot in all_supply_depots:
-            is_friendly_unit_nearby = any(
-                bottle.distance_between_tiles(supply_depot.tile_position, unit.tile_position) < 3
-                for unit in all_friendly_units)
-            if is_friendly_unit_nearby:
+            is_enemy_unit_nearby = any(
+                bottle.distance_between_tiles(supply_depot.tile_position, unit.tile_position) < 6
+                for unit in all_enemies)
+            if not is_enemy_unit_nearby:
                 supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_LOWER)
             else:
                 supply_depot.ability(pycc.ABILITY_ID.MORPH_SUPPLYDEPOT_RAISE)
-
 
     def set_up_debugging(self) -> None:
         """Set up visual debugger"""
