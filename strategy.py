@@ -48,7 +48,7 @@ class Strategy:
                 unit_dict[pyunit.unit_type.name] = 1
 
         
-        print(unit_dict)
+        #print(unit_dict)
 
     def create_bayes_model(self) -> BayesianNetwork:
         """ Creates and returns a Bayesian network"""
@@ -124,9 +124,9 @@ class Strategy:
         strategy_model.add_cpds(cpd_gametime_under_2700_tick, cpd_building_lost_defence, cpd_many_minerals, cpd_enemy_offensive, 
                                 cpd_offensive, cpd_defensive, cpd_expansive, cpd_enemy_attack_last_675_tick)
         strategy_model.check_model()
-        print("Bayes model OK")
-        print("Nodes in the model: ", strategy_model.nodes())
-        print("Edges in the model: ", strategy_model.edges())
+        #print("Bayes model OK")
+        #print("Nodes in the model: ", strategy_model.nodes())
+        #print("Edges in the model: ", strategy_model.edges())
 
         return strategy_model
     
@@ -170,7 +170,7 @@ class Strategy:
         # best_strat[1] is the value given from the bayes network
         best_strat = ['', 0]
         for strat in strats:
-            print(strat.variables[0], " ", strat.values[1])
+            #print(strat.variables[0], " ", strat.values[1])
             if strat.values[1] > best_strat[1]:
                 best_strat[0] = strat.variables[0]
                 # Truth value
@@ -212,8 +212,8 @@ class Strategy:
             #print(pyunit.unit_type.unit_typeid)
             #exit()
             if pyunit.unit_type.name in OFFENSIVE_UNITS:
-                print(pyunit.unit_type.unit_typeid)
-                print(UPGRADE_ID.MARINESTIMPACK)
+                #print(pyunit.unit_type.unit_typeid)
+                #print(UPGRADE_ID.MARINESTIMPACK)
                 units += 1
         if units > 25:
             return 1
