@@ -75,7 +75,7 @@ class Move(Task):
         if py_unit.is_alive:
             # Are we at the selected target yet, or at least very, very close?
             
-            if(self.frame_counter % 10 == 0):
+            if(self.frame_counter % 100 == 0):
                 self.frame_counter = 0
                 if self.agent.unit_collection.get_group(PLAYER_ENEMY) is not None:
                     get_enemies_to_mark(self.agent, self.agent.unit_collection.get_group(PLAYER_ENEMY))
