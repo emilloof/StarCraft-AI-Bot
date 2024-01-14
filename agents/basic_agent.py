@@ -10,6 +10,7 @@ import bottlenecks as bottle    # Erik
 from modules.path_finding import vertex #For pathfinding - hanlu520
 
 
+
 # David
 from strategy import Strategy
 
@@ -51,6 +52,12 @@ class BasicAgent(pycc.IDABot):
         self.cache_functions: set[callable] = set()
         self.cache_manager: {module: {callable:{'last_clear': int, 'max_count': int}}} = dict()
 
+        # Hannes
+        self.terrain_map = {}
+        self.walkable_tiles = set()
+        self.safe_path = {}
+        self.used_vertexes = []
+
         # Hard coded costs for upgrades since they are not available in the API
         self.UPGRADES = {
             pycc.UNIT_TYPEID.TERRAN_ORBITALCOMMAND: (150, 0),
@@ -62,11 +69,19 @@ class BasicAgent(pycc.IDABot):
         self.COMBAT_TYPES = set()
 
         if DEBUG_VISUAL:
-            self.debugger: Union[HeatMapDebugger, PathDebugger] = HeatMapDebugger()
+            self.debugger: Union[HeatMapDebugger, PathDebugger] = PathDebugger()
 
         if DEBUG_LOGS:
             self.timer = TicToc(prints=DEBUG_CONSOLE)
             self.logger = Logger()
+    @cached_property
+    def get_walkable_tiles(self):
+        for y in range(self.map_tools.height):
+            for x in range(self.map_tools.width):
+                if self.map_tools.is_walkable(x, y):
+                    self.walkable_tiles.add((x, y))
+        return self.walkable_tiles
+    
 
     @cached_property
     def non_start_bases_positions(self) -> frozenset:
@@ -80,10 +95,14 @@ class BasicAgent(pycc.IDABot):
         vertex_dict = {}
         for y in range(self.map_tools.height):
             for x in range(self.map_tools.width):
-                if (self.map_tools.is_walkable(x, y)):
-                    current_point = (x, y)
-                    vertex_dict[current_point] = (vertex.Vertex(current_point))
+                current_point = (x, y)
+                vertex_dict[current_point] = (vertex.Vertex(current_point))
+  
         return vertex_dict
+    
+  
+    
+
 
     def on_game_start(self) -> None:
         """Runs on game start. Loads necessary data and generates settings"""
@@ -98,10 +117,13 @@ class BasicAgent(pycc.IDABot):
             self.BOTTLENECKS = bottle.get_bottlenecks(self, start_base_pos)    # ERIk
         if USE_MOVE:
             # init vertex_dict
+            __ = self.get_walkable_tiles
             _ = self.vertex_dict
         if USE_PFSCOUT:
             self.region_manager.on_start()
         if DEBUG_VISUAL:
+            self.terrain_map = {(x, y): int(self.map_tools.is_walkable(pycc.Point2DI(x, y))) for x in range(self.map_tools.width) for y in range(self.map_tools.height)}
+
             self.set_up_debugging()
             self.debugger.on_start()
             self.debugger.on_step(lambda: debug.debug_map(self))  
@@ -160,7 +182,7 @@ class BasicAgent(pycc.IDABot):
             debug.debug_enemies(self)
             debug.debug_enemies_text(self)
         if DEBUG_VISUAL:
-            self.debugger.on_step()
+            self.debugger.on_step(lambda: debug.debug_vertex_potential(self, self.vertex_dict[(72, 38)]))
             self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
 
         if (self.current_frame - self.clear_cache_frame) % FRAME_CLEAR_CACHE == 1:
@@ -172,7 +194,7 @@ class BasicAgent(pycc.IDABot):
             self, self.strategy, self.bayes_model, self.hp_tracker,
             self.strategy.get_hit_points(self), self.internal_minerals, self.current_frame,
             self.last_hp_diff)
-        # print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
+        #print(f'Current strategy: {self.curr_stratstr} \n Goal State: {self.curr_strategy}')
         # exit()
 
     def clear_cache_functions(self):
@@ -224,12 +246,12 @@ class BasicAgent(pycc.IDABot):
             (7, 7): (0, 255, 255),
             (8, 8): (100, 100, 0),
             (9, 9): (0, 100, 100),
-            (10, 10): (100, 0, 100),
-            (11, 11): (100, 100, 255),
-            (12, 12): (100, 255, 100),
-            (13, 13): (255, 100, 100),
-            (14, 14): (255, 150, 100),
-            (15, 15): (100, 100, 100)
+            (95, 95): (100, 0, 100),
+            (96, 96): (100, 100, 255),
+            (97, 97): (100, 255, 100),
+            (98, 98): (255, 100, 100),
+            (99, 99): (255, 150, 100),
+            (100, 100): (100, 100, 100)
         }
         self.debugger.set_color_map(color_map)
 
@@ -256,3 +278,4 @@ class BasicAgent(pycc.IDABot):
         if isinstance(unit_type, pycc.UnitType) and unit_type.unit_typeid in self.UPGRADES:
             minerals, gas = self.UPGRADES[unit_type.unit_typeid]
         return minerals, gas, supply
+    

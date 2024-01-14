@@ -20,7 +20,7 @@ DEBUG_VISUAL = False
 # Enable scout debugger
 DEBUG_SCOUT = True
 # Use eriks chokepoints
-USE_CHOKES = True
+USE_CHOKES = False
 # Use Hannes pathfinding
 USE_MOVE = False
 # Use Vincent potential flow scouting

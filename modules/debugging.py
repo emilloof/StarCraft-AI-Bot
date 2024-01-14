@@ -6,6 +6,8 @@ from modules.potential_flow.regions import (
     Region,
     regions_debug,
 )
+from modules.path_finding.vertex import Vertex
+from modules.path_finding.helpers import get_potential
 
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
@@ -53,13 +55,21 @@ def print_gate_tiles(bottle_tiles: list, heat_map_row: list, x: int, y: int) -> 
                 return True
 
 
-            """else:
+            """else:s
                 heat_map_row.append(3)
                 return True"""
     return False
 
+def debug_vertex_potential(agent: BasicAgent, vertex: Vertex) -> None:
+    
+    #potential = get_potential(vertex)
+    #potential_map = {(vertex.x, vertex.y): potential}
+    #agent.terrain_map.update(potential_map)
+    agent.debugger.set_display_values(agent.terrain_map)
 
-def debug_regions(agent: BasicAgent) -> None:
+
+
+def debug_regions(agent: BasicAgent) -> Nones:
     regions: set[Region] = {region.tiles_as_tuples for region in agent.regions}
     rmap = regions_debug(regions)
     for region in regions:
