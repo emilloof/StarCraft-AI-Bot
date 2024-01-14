@@ -14,7 +14,9 @@ class CustomPriorityQueue(PriorityQueue):
         try:
             self.entry_finder.remove(item)
         except KeyError:
+            print("KeyError")
             pass
+        print("get", item)
         return item
 
     def __contains__(self, item):

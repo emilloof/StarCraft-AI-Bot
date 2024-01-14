@@ -16,6 +16,7 @@ from tasks.build import Build
 from tasks.scout import Scout
 from tasks.attack import Attack
 from tasks.move import Move
+from tasks.safe_move import SafeMove
 from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID
 from modules.extra import exists_producer_for, get_worker_type, has_prerequisites
 from queue import SimpleQueue
@@ -219,9 +220,12 @@ class TaskManager:
         """Generate tasks for moving units to a target position."""
         pos = self.agent.base_location_manager.get_player_starting_base_location(PLAYER_ENEMY).position
         py_units = self.agent.unit_collection.get_group(PLAYER_SELF, lambda u: u.unit_type.is_combat_unit, Idle)
+        
         if(len(py_units) > 6):
-            #for i in range(0, 1):
-            self.task_queue.add(Move(pos, MOVE_PRIO, self.agent))
+            for i in range(len(py_units)):
+                self.task_queue.add(SafeMove(pos, MOVE_PRIO, self.agent))
+                
+
     
     def attack(self) -> None:
         """Generates attack tasks targeting the enemy starting base for every combat unit."""

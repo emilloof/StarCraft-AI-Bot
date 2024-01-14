@@ -20,7 +20,7 @@ def set_vertex_potential(agent, vertex, potential_value, radius):
     
     for layer in layers:
         # Calculate the potential for this layer
-        print("layer", layer)
+        #print("layer", layer)
         # Iterate over the vertices in this layer
         for x in range(vertex.x - layer, vertex.x + layer + 1):
             for y in range(vertex.y - layer, vertex.y + layer + 1):
@@ -37,15 +37,12 @@ def set_vertex_potential(agent, vertex, potential_value, radius):
 def get_enemies_to_mark(agent, enemies : dict):
     for enemy in enemies:
         enemy_pos = enemy.tile_position
-        enemy_type = enemy.unit_type
         attack_rng = enemy.unit_type.attack_range
         is_combat_unit = enemy.unit_type.is_combat_unit
         is_building = enemy.unit_type.is_building
    
 
         if is_combat_unit and not is_building:
-            print("type ", enemy_type), print("enemypos ", enemy_pos) 
-            print("attack range ", attack_rng), print("is_combat_unit ", is_combat_unit)
             if agent.vertex_dict.get(enemy_pos) is None:
                 agent.vertex_dict[enemy_pos] = Vertex((enemy_pos.x, enemy_pos.y))
             set_vertex_potential(agent, agent.vertex_dict[enemy_pos], 40, int(round(attack_rng)))

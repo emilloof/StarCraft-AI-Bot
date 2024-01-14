@@ -2,6 +2,7 @@ import math
 
 
 
+
 class Vertex():
     def __init__(self, position : (int, int), edge_cost = 1, potential=0, neighbour_list=None) -> None:
         self.position = position 
@@ -12,35 +13,24 @@ class Vertex():
         
         #self.g_value = g_value
         #self.f_value = f_value
-        #self.neighbour_list = []
-        #self.neighbours()
+        self.neighbour_list = []
+        self.get_neighbours()
     
-    '''
 
-    def set_potential(self, potential):
-        self.potential = potential
-
-    
-    def set_vertex_potential(self, value):
+    def get_neighbours(self):
         from agents.basic_agent import BasicAgent
-        # Set the potential of the vertex itself
-        self.set_potential(value)
 
-        # Define the range of layers to iterate over
-        layers = range(1, 4)
+        current_x = self.x 
+        current_y = self.y
+        #walkable_tiles = BasicAgent.walkable_tiles
+        #print("1212", walkable_tiles)
 
-        for layer in layers:
-            # Calculate the potential for this layer
-            layer_potential = value * (layer + 1)
+        for x_cord in range(current_x - 1, current_x + 2):
+            for y_cord in range(current_y - 1, current_y + 2):
+                #if BasicAgent.map_tools.is_walkable(x_cord, y_cord): 
+                if (current_x, current_y) != (x_cord, y_cord): 
+                    self.neighbour_list.append((x_cord, y_cord))
 
-            # Iterate over the vertices in this layer
-            for x in range(self.x - layer, self.x + layer + 1):
-                for y in range(self.y - layer, self.y + layer + 1):
-                    # Exclude vertices that are not in the current layer
-                    if x == self.x - layer or x == self.x + layer or y == self.y - layer or y == self.y + layer:
-                        neighbour_vertex = BasicAgent.vertex_dict[(x,y)]
-                        neighbour_vertex.set_potential(layer_potential)
-    '''  
 
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):
