@@ -1,0 +1,1 @@
+Min kod för strategi finns i strategy.py. Funktioner i denna fil kallas från basic_agent.py, först i init funktionen (rad 40-46), sedan från hjälpfunktionen update_strategy(), som kallas på i on_step()
