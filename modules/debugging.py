@@ -67,18 +67,21 @@ def debug_regions(agent: BasicAgent) -> None:
         for x in range(agent.map_tools.width):
             tile = Point2DI(x, y)
             if agent.map_tools.is_walkable(x, y) or tile in agent.region_manager.terrain_borders:
-                color = agent.region_manager.get_region(tile).id
+                if reg := agent.region_manager.get_exact_region(tile):
+                    color = reg.id
+                else:
+                    color = 0
                 rmap[(x, y)] = color
-    if agent.scout_tile:
-        rmap[(agent.scout_tile.x, agent.scout_tile.y)] = 1
+    #if agent.scout_tile:
+    #    rmap[(agent.scout_tile.x, agent.scout_tile.y)] = 1
     agent.debugger.set_display_values(rmap)
 
 
 def debug_region_borders(agent: BasicAgent) -> None:
     rbmap = {}
-    for color, region in enumerate(agent.regions, start=1):
-        for border_tile in region.get_border():
-            rbmap[(border_tile.x, border_tile.y)] = color
+    for region in agent.region_manager.regions:
+        for border_tile in region.border:
+            rbmap[(border_tile.x, border_tile.y)] = region.id
     agent.debugger.set_display_values(rbmap, (agent.map_tools.width, agent.map_tools.height))
 
 

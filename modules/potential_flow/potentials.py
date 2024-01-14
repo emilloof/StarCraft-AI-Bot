@@ -30,8 +30,8 @@ def region_pval(scout: PFscout, scout_unit: PyUnit, target_region: Region) -> Ve
     d2_center = cur_reg_center.distance(scout_unit.position)
 
     source_correction = 1 if cur_reg == target_region else 0
-    vortex_correction = 1 if cur_reg == target_region else 0.01 \
-        if d2_center < scout.DISTANCE_TO_SWITCH_SOURCE_SINK else 0.01
+    vortex_correction = 1 if cur_reg == target_region else (0.01 
+        if d2_center < scout.DISTANCE_TO_SWITCH_SOURCE_SINK else 0.01)
     scout.DISTANCE_TO_SWITCH_SOURCE_SINK = scout_unit.unit_type.sight_range + 1
 
     if DEBUG_SCOUT:
@@ -86,7 +86,7 @@ def border_pval(scout: PFscout, scout_unit: PyUnit, cur_region: Region, target_r
 
             if DEBUG_SCOUT:
                 list_border.append(vrtx + src)  # * 100
-                scout.agent.map_tools.draw_circle(Point2D(border_tile), 2, Color.PURPLE)  # Color.RED
+                scout.agent.map_tools.draw_circle(Point2D(border_tile), 2, Color.RED)  # Color.RED
 
             b_val += vrtx + src
             num_border += 1
@@ -101,6 +101,9 @@ def border_pval(scout: PFscout, scout_unit: PyUnit, cur_region: Region, target_r
 def attract_point_pval(scout: PFscout, scout_unit: PyUnit):
     re = Vector()
     pos = scout_unit.position
+    if scout.USE_EXTRA_ATTR:
+        if scout.attract_points is None:
+            scout.attract_points.add(scout.agent.region_manager.get_region(scout_unit.tile_position).center)
     for p in scout.attract_points:
         if DEBUG_SCOUT:
             scout.region_potentials.append(source_potential(p, pos) * (-32))    # * 100
@@ -193,7 +196,8 @@ def calculate_pval(scout: PFscout, scout_unit: PyUnit):
             scout.agent, scout_unit.position, scout_unit.unit_type.sight_range + 2
         )
     )
-    scout.register_enemy_positions(enemies)
+    # scout.register_enemy_positions(enemies)
+    scout.enemies = enemies
 
     # Calculate unitPVal
     for enemy in scout.get_enemies():

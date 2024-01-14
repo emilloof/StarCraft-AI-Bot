@@ -228,7 +228,7 @@ def get_enemies_in_neighbouring_tiles(agent: BasicAgent, tile_pos: Point2DI, fas
     if fast:
         pass
         # return {unit for unit in agent.get_all_units() if unit.tile_position in neighbours and unit.player == PLAYER_ENEMY}
-    return agent.unit_collection.get_group(lambda unit: unit.tile_position in neighbours and unit.player == PLAYER_ENEMY and unit.can_attack)
+    return agent.unit_collection.get_group(lambda unit: unit.tile_position in neighbours and unit.player == PLAYER_ENEMY)  # and unit.can_attack)
 
 
 def get_friendly_in_radius(agent: BasicAgent, position: Point2D, radius: int) -> set[PyUnit]:

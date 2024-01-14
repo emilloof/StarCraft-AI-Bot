@@ -116,12 +116,15 @@ class TaskManager:
         if USE_MOVE:
             self.move()
         else:
-            #pass
             self.attack()
-        if USE_PFSCOUT and not any(isinstance(task, PFscout) for task in self.current_tasks.tasks):
-            self.improved_scout()
-        elif self.agent.current_frame == 1:
-            self.scout()
+        if self.agent.use_scout:
+            if USE_PFSCOUT:
+                if not any(isinstance(task, PFscout) for task in self.current_tasks.tasks):
+                    self.improved_scout()
+                #if not any(isinstance(task, Scout) for task in self.current_tasks.tasks):
+                #    self.scout()
+            #elif self.agent.current_frame == 1:
+            #    self.scout()
 
     def gather(self) -> None:
         """

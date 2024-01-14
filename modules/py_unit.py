@@ -37,9 +37,10 @@ class PyUnit:
         # time to keep the unit in knowledge base before determined old knowledge
         self.last_seen = last_seen
         self.fade_time = fade_time
-        add_expire_instance(self.agent, self)
-        add_expire_function(self.agent, self, self.get_target, 48)
-        # TODO: Add previous known position, in case Unit.position does not work
+
+        if USE_PFSCOUT:
+            add_expire_instance(self.agent, self)
+            add_expire_function(self.agent, self, self.get_target, 48)
 
     def __repr__(self):
         return f"<PyUnit: {self.unit_type.name}, {self.id}>"
@@ -57,10 +58,11 @@ class PyUnit:
     def is_enemy(self) -> bool:
         """Returns if unit is an enemy"""
         return PLAYER_ENEMY in self.groups
-
-    @cache
-    def get_target(self):
-        return self.target
+    
+    if USE_PFSCOUT:
+        @cache
+        def get_target(self):
+            return self.target
 
     @property
     def target(self) -> Unit:

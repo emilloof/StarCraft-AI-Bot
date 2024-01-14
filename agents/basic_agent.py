@@ -8,6 +8,7 @@ from modules import BuildOrder, RegionManager, TaskManager, UnitCollection, PyBu
 from modules.extra import unit_types_by_condition
 import bottlenecks as bottle    # Erik
 from modules.path_finding import vertex #For pathfinding - hanlu520
+from modules.scout_tester import ScoutTester
 
 
 # David
@@ -44,6 +45,10 @@ class BasicAgent(pycc.IDABot):
         self.curr_strategy = {}
         self.curr_stratstr = ''
         self.last_hp_diff = 0
+
+        self.use_scout = True
+        self.latest_pfscout_unit = None
+        self.latest_scout_unit = None
 
         # Vincent
         if USE_PFSCOUT:
@@ -112,6 +117,10 @@ class BasicAgent(pycc.IDABot):
             self.debugger.on_step(lambda: debug.debug_map(self))
         if DEBUG_CHEATS:
             debug.up_up_down_down_left_right_left_right_b_a_start(self)
+        
+        if self.use_scout:
+            self.scout_tester_1 = ScoutTester(self)
+            # self.scout_tester_2 = ScoutTester(self)
 
     def on_step(self) -> None:
         """Runs on every step and runs IDABot.on_step.
@@ -131,7 +140,7 @@ class BasicAgent(pycc.IDABot):
             if USE_CHOKES:
                 self.update_supply_depots()
         
-        self.unit_collection.on_step()    
+        self.unit_collection.on_step()
 
         if self.current_frame % FRAME_SKIP == 1:
             new_units = [
@@ -165,15 +174,19 @@ class BasicAgent(pycc.IDABot):
             debug.debug_enemies(self)
             debug.debug_enemies_text(self)
         if DEBUG_VISUAL:
-            self.debugger.on_step(lambda: debug.debug_regions(self))
+            self.debugger.on_step(lambda: debug.debug_region_borders(self))
             self.map_tools.draw_text_screen(0.01, 0.01, f"frame: {self.current_frame}")
         if DEBUG_SCOUT:
             from modules.potential_flow.regions import calc_center
-            for region in self.region_manager.regions:
-                self.map_tools.draw_text(region.center, "dpc", pycc.Color.WHITE)
+            #for region in self.region_manager.regions:
+            #    self.map_tools.draw_text(region.center, "dpc", pycc.Color.WHITE)
 
-        if (self.current_frame - self.clear_cache_frame) % FRAME_CLEAR_CACHE == 1:
-            self.clear_cache_functions()
+        if USE_PFSCOUT:
+            if (self.current_frame - self.clear_cache_frame) % FRAME_CLEAR_CACHE == 1:
+                self.clear_cache_functions()
+        if self.use_scout:
+            self.scout_tester_1.on_step()
+            # self.scout_tester_2.on_step()
 
     def update_strategy(self):
         # print("time: ", self.time)
@@ -226,7 +239,7 @@ class BasicAgent(pycc.IDABot):
         # sets the colormap for the debugger {(interval): (r, g, b)}
         color_map = {
             (0, 0): (0, 0, 0),
-            (1, 1): (255, 255, 255),
+            (1, 1): (200, 200, 200),
             (2, 2): (0, 255, 0),
             (3, 3): (255, 0, 0),
             (4, 4): (0, 0, 255),

@@ -13,7 +13,7 @@ def calculate_value(unit_list):
     total_value = 0
     if len(unit_list) > 0:
         for sim_unit in unit_list:
-            if sim_unit.max_weapon_cooldown is not None: #Hittar inte felet ibland råkar det bli en NoneType
+            if sim_unit.max_weapon_cooldown is not None and sim_unit.hp > 0: #Hittar inte felet ibland råkar det bli en NoneType
                 total_value += (sqrt(sim_unit.hp) * (sim_unit.attack_damage / sim_unit.max_weapon_cooldown))
     return total_value
 

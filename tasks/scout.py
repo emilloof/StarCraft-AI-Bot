@@ -61,6 +61,7 @@ class Scout(Task):
         :return: Status.DONE if unit is finished scouting. Status.NOT_DONE if it keeps scouting.
         Status.FAIL if unit is idle.
         """
+        self.agent.latest_scout_unit = py_unit
         if not self.target:
             return Status.DONE
 
