@@ -1,0 +1,6 @@
+Min kod finns i filerna:
+    - bottlenecks.py
+    - basic_agent.py
+    - py_building_placer.py
+
+Det mesta av koden finns i bottlencks.py som tar fram kartans flaskhalsar. Detta görs en gång i on_start i basic_agent.py som även ser till att uppdatera samtliga "supply depots" höjning och sänkning i on_step. Koden som finns i py_building_placer.py tar fram en lämpligt position att placera en "supply depot" på och använder sig här av agentens flaskhalsar.
