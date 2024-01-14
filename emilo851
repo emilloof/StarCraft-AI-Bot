@@ -1,0 +1,2 @@
+Min kod finns främst i tasks.attack_decider.py och tasks.attack_scripts.py, men även ändrat lite i tasks.attack.py.
+Sen finns det lite små grejer i py_unit.py som är anpassade så de fungerar med min kod.
