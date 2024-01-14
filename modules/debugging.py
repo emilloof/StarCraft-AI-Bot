@@ -122,6 +122,29 @@ def debug_map(agent: BasicAgent) -> None:
     if not USE_CHOKES:
         return
     heat_map = []
+    bottle_tiles = agent.BOTTLENECKS
+    for y in range(agent.map_tools.height):
+        heat_map_row = []
+        for x in range(agent.map_tools.width):
+            if int(agent.map_tools.is_walkable(x, y)):
+                b = False
+                #b = print_depth(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #b = print_gate_tiles(bottle_tiles, heat_map_row, x, y) # Avkommentera denna rad om du vill ha ursprungsfunktionaliteten (Används av eriei013)
+                #print(bottle_tiles)
+                if not b:
+                    heat_map_row.append(1)
+            else:
+                heat_map_row.append(0)
+        heat_map.append(heat_map_row)
+
+    agent.debugger.set_display_values(heat_map)
+
+
+def debug_map(agent: BasicAgent) -> None:
+    """Displays the map in a separate window."""
+    """heat_map = [[int(agent.map_tools.is_walkable(x, y)) for x in range(agent.map_tools.width)]
+                for y in range(agent.map_tools.height)]"""
+    heat_map = []
     bottle_tiles = self.BOTTLENECKS
     #print(bottle_tiles)
     for y in range(agent.map_tools.height):

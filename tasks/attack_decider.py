@@ -6,7 +6,6 @@ from library import PLAYER_ENEMY, Point2D, PLAYER_SELF
 from modules.unit_collection import UnitCollection
 import copy
 # Function to calculate a distance between two Point2D.
-Point2D.distance = lambda self, other: sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
 scripts = ["kiting", "nok_av"]
 
 

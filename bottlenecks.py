@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
 def get_bottlenecks(agent: BasicAgent, start_base_pos: Point2DI) -> list[list]:
-    """ Beskrivning """
+    """ Returns a list of lists containing bottlenecks """
  
     gate_pairs = generate_bottleneck_bounds(agent)
 
@@ -44,23 +44,7 @@ def set_tile_depths(agent: BasicAgent) -> dict:
 
 def get_depth_of_tile(agent: BasicAgent, tile: Point2DI, last_found_depth: int) -> int:
     """ Returns the distance between a walkable tile and its closest wall tile """
-    """current_depth = last_found_depth - 1
-    depth = 0
-    while depth == 0:
-        neighbours = get_neighbours(agent, current_depth, tile)
-        wall_tiles_found = 0
-        wall_threshold = 0
-        for neighbour in neighbours:
-            if not agent.map_tools.is_walkable(neighbour):
-                if wall_tiles_found == 0:
-                    wall_threshold = ((12-current_depth)/28) + 1
-                wall_tiles_found += 1
-                if round(wall_threshold) <= wall_tiles_found:
-                    depth = round(math.log2(current_depth) + 1)
-                    break
-        current_depth += 1
-
-    return depth"""
+   
     depth = 0
     current_depth = last_found_depth - 1
     while depth == 0:
@@ -73,10 +57,27 @@ def get_depth_of_tile(agent: BasicAgent, tile: Point2DI, last_found_depth: int) 
         current_depth = current_depth + 1
     return depth
 
+    """ The refined version """
+    """current_depth = last_found_depth - 1
+        depth = 0
+        while depth == 0:
+            neighbours = get_neighbours(agent, current_depth, tile)
+            wall_tiles_found = 0
+            wall_threshold = 0
+            for neighbour in neighbours:
+                if not agent.map_tools.is_walkable(neighbour):
+                    if wall_tiles_found == 0:
+                        wall_threshold = ((12-current_depth)/28) + 1
+                    wall_tiles_found += 1
+                    if round(wall_threshold) <= wall_tiles_found:
+                        depth = round(math.log2(current_depth) + 1)
+                        break
+            current_depth += 1
 
+        return depth"""
 
 def set_gate_clusters(agent: BasicAgent) -> list[set]:
-    """ Beskrivning """
+    """ Performs rising water level simulation and returns a list of ridges """
 
     depths = set_tile_depths(agent)
     curr_water_level = len(depths)  
@@ -192,6 +193,7 @@ def generate_bottleneck_bounds(agent: BasicAgent) -> list[list]:
 
 
 def pair_tiles(pairless_gate_tiles: list) -> list[list]:
+    """ Pairs sole start and end tiles """
 
     paired_tiles = []
     threshold = 17  # Magic number that can be changed after desire

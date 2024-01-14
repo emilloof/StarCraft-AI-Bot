@@ -21,15 +21,14 @@ Color.__floordiv__ - overrides floor division (divides RGB-color with int).
 from __future__ import annotations
 from functools import cache
 import json
-import math
+from math import sqrt, atan2, pi
 from typing import TYPE_CHECKING, Iterable, Optional, Union
 
 if TYPE_CHECKING:
     from py_unit import PyUnit
     from agents.basic_agent import BasicAgent
 
-from tasks import build
-from tasks import train
+import tasks
 from functools import singledispatch
 from library import UnitType, PLAYER_SELF, Point2D, UPGRADE_ID, Point2DI, UNIT_TYPEID, \
     Color, BaseLocation, Race, PLAYER_ENEMY
@@ -79,7 +78,7 @@ def find_producer(agent: BasicAgent, unit_type: UnitType) -> Optional[PyUnit]:
                 continue
             elif candidate.unit_type.is_building and candidate.is_flying:
                 continue
-            elif isinstance(candidate.task, build.Build) or isinstance(candidate.task, train.Train):
+            elif isinstance(candidate.task, tasks.build.Build) or isinstance(candidate.task, tasks.train.Train):
                 continue
             else:
                 return candidate
@@ -182,12 +181,24 @@ def _(pos: tuple, agent: BasicAgent) -> list[tuple]:
     return set(map(lambda pos: (pos.x, pos.y), get_neighbours(Point2DI(pos[0], pos[1]), agent)))
 
 
+def get_units_in_radius(agent: BasicAgent,
+                        position: Point2D,
+                        radius: int,
+                        condition: callable = lambda _: _) -> set[PyUnit]:
+    """Returns a list of all units within a given radius of a given position.
+    Optional parameter of condition to filter the units."""
+    return agent.unit_collection.get_group(
+        lambda unit: position.distance(unit.position) <= radius and condition(unit))
+
+
+def get_friendly_in_radius(agent: BasicAgent, position: Point2D, radius: int) -> set[PyUnit]:
+    """Returns a list of friendly units within a given radius of a given position."""
+    return get_units_in_radius(agent, position, radius, lambda unit: unit.player == PLAYER_SELF)
+
+
 def get_enemies_in_radius(agent: BasicAgent, position: Point2D, radius: int) -> set[PyUnit]:
     """Returns a list of enemy units within a given radius of a given position."""
-    return agent.unit_collection.get_group(
-        lambda unit: unit.player == PLAYER_ENEMY
-        and position.distance(unit.position) <= radius
-    )
+    return get_units_in_radius(agent, position, radius, lambda unit: unit.player == PLAYER_ENEMY)
 
 
 @cache
@@ -218,6 +229,14 @@ def get_approx_distance(self, position):
     min_calc = (3 * min_val) >> 3
     return (min_calc >> 5) + min_calc + max_val - (max_val >> 4) - (max_val >> 6)
 
+def angle_to(from_pos, to_pos):
+    dx = to_pos.x - from_pos.x
+    dy = to_pos.y - from_pos.y
+    direction = atan2(dy, dx)
+    if direction < 0:
+        direction += 2 * pi    # [-pi, pi] -> [0, 2pi] (to match Unit.facing)
+    return direction
+
 
 Point2D.square_distance = lambda self, other: (self.x - other.x) ** 2 + (self.y - other.y) ** 2
 Point2D.__eq__ = lambda self, other: isinstance(
@@ -225,11 +244,13 @@ Point2D.__eq__ = lambda self, other: isinstance(
 Point2D.as_tuple = lambda self: (self.x, self.y)
 Point2D.as_tile = lambda self: Point2DI(self)
 Point2D.get_approx_distance = lambda self, other: get_approx_distance(self, other)
-Point2D.distance = lambda self, other: math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+Point2D.distance = lambda self, other: sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
 Point2D.__add__ = lambda self, other: Point2D(self.x + other.x, self.y + other.y)
+Point2D.angle_to = lambda self, other: angle_to(self, other)
+# Point2D.angle_to = lambda self, other: acos(self.dot(other) / (self.magnitude * other.magnitude))
 
 Point2DI.square_distance = lambda self, other: (self.x - other.x) ** 2 + (self.y - other.y) ** 2
-Point2DI.distance = lambda self, other: math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+Point2DI.distance = lambda self, other: sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
 Point2DI.__add__ = lambda self, other: Point2DI(self.x + other.x, self.y + other.y)
 Point2DI.as_tuple = lambda self: (self.x, self.y)
 Point2DI.get_approx_distance = lambda self, other: get_approx_distance(self, other)
