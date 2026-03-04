@@ -1,8 +1,8 @@
 from math import sqrt
 from modules.py_unit import PyUnit
-from library import PLAYER_ENEMY, Point2D
+from commandcenter import PLAYER_ENEMY, Point2D
 from tasks.attack_scripts import AttackScripts
-from library import PLAYER_ENEMY, Point2D, PLAYER_SELF
+from commandcenter import PLAYER_ENEMY, Point2D, PLAYER_SELF
 from modules.unit_collection import UnitCollection
 import copy
 # Function to calculate a distance between two Point2D.

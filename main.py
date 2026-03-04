@@ -1,4 +1,4 @@
-from library import Race
+from commandcenter import Race
 from run_sc2 import run_sc2
 from agents.basic_agent import BasicAgent
 from agents.noop_agent import NoOpAgent

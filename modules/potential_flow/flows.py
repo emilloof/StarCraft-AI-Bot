@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
-from library import Point2D
+from commandcenter import Point2D
 from modules.potential_flow.vector import Vector
 
 from modules.py_unit import PyUnit

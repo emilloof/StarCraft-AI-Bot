@@ -1,4 +1,4 @@
-from library import Coordinator, Race, create_participants, create_computer, Difficulty, IDABot
+from commandcenter import Coordinator, Race, create_participants, create_computer, Difficulty, IDABot
 from config import SC2_PATH, DEBUG_LOGS
 from typing import Optional
 import os

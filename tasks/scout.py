@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from modules.py_unit import PyUnit
     from agents.basic_agent import BasicAgent
 
-from library import UnitType, Point2D
+from commandcenter import UnitType, Point2D
 from tasks.task import Task, Status
 from queue import SimpleQueue
 class Scout(Task):

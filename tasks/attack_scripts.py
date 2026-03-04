@@ -1,6 +1,6 @@
 from math import sqrt
 from modules.py_unit import PyUnit
-from library import PLAYER_ENEMY, Point2D, PLAYER_SELF
+from commandcenter import PLAYER_ENEMY, Point2D, PLAYER_SELF
 
 
 class AttackScripts:

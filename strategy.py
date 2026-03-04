@@ -1,7 +1,7 @@
 from modules.unit_collection import UnitCollection
 from modules.py_unit import PyUnit
-from library import PLAYER_SELF, PLAYER_ENEMY, PLAYER_NEUTRAL, UNIT_TYPEID, Unit, TechTree, UnitType, UPGRADE_ID
-from pgmpy.models import  BayesianNetwork
+from commandcenter import PLAYER_SELF, PLAYER_ENEMY, PLAYER_NEUTRAL, UNIT_TYPEID, Unit, TechTree, UnitType, UPGRADE_ID
+from pgmpy.models import  DiscreteBayesianNetwork
 from pgmpy.factors.discrete import TabularCPD
 from pgmpy.inference import VariableElimination
 
@@ -50,9 +50,9 @@ class Strategy:
         
         #print(unit_dict)
 
-    def create_bayes_model(self) -> BayesianNetwork:
+    def create_bayes_model(self) -> DiscreteBayesianNetwork:
         """ Creates and returns a Bayesian network"""
-        strategy_model = BayesianNetwork(
+        strategy_model = DiscreteBayesianNetwork(
             [
                  ("Gametime < 2700 tick", "Offensive"),
                  ("Enemy attack last 675 tick", "Enemy offensive"),
@@ -131,7 +131,7 @@ class Strategy:
         return strategy_model
     
     
-    def choose_strategy(self, strategy,  strategy_model: BayesianNetwork, hp_tracker: dict, updated_hp_tracker: dict, minerals: int, time: int, last_hp_diff: int ) -> (dict, dict, int):
+    def choose_strategy(self, strategy,  strategy_model: DiscreteBayesianNetwork, hp_tracker: dict, updated_hp_tracker: dict, minerals: int, time: int, last_hp_diff: int ) -> (dict, dict, int):
         """ Returns the best strategy aswell as an updated dict of the hp for our strucutres"""
 
         enemy_attack_last_675_tick = 0

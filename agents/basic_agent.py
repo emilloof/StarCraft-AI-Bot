@@ -1,6 +1,6 @@
 from functools import cached_property
 from typing import Union
-import library as pycc
+import commandcenter as pycc
 
 from config import DEBUG_CHEATS, DEBUG_CONSOLE, DEBUG_LOGS, DEBUG_TEXT, DEBUG_UNIT, DEBUG_VISUAL, FRAME_SKIP, \
     BUILD_ORDER_PATH, USE_CHOKES, DEBUG_ENEMIES, FRAME_CLEAR_CACHE, USE_MOVE, USE_PFSCOUT

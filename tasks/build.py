@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
-from library import UnitType, Point2DI, Unit, PLAYER_SELF
+from commandcenter import UnitType, Point2DI, Unit, PLAYER_SELF
 from tasks.task import Task, Status
 from modules.py_unit import PyUnit
 from modules import extra

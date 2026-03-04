@@ -11,7 +11,7 @@ types of debuggers simultaneous.
 In the example below you can see how you get started with the visual debugger. In this example a debugger for a heatmap is set as the debugger.
 
 ```python
-from library import *
+from commandcenter import *
 import numpy as np
 import visualdebugger.heat_map_debugger
 import visualdebugger.flow_debugger

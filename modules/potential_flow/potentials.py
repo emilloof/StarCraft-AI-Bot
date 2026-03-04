@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
-from library import Color, Point2D, Point2DI, UNIT_TYPEID
+from commandcenter import Color, Point2D, Point2DI, UNIT_TYPEID
 from config import DEBUG_SCOUT
 from modules.extra import get_closest, get_enemies_in_radius
 

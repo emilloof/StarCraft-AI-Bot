@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 import tasks
 from functools import singledispatch
-from library import UnitType, PLAYER_SELF, Point2D, UPGRADE_ID, Point2DI, UNIT_TYPEID, \
+from commandcenter import UnitType, PLAYER_SELF, Point2D, UPGRADE_ID, Point2DI, UNIT_TYPEID, \
     Color, BaseLocation, Race, PLAYER_ENEMY
 
 

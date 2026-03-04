@@ -1,4 +1,4 @@
-from library import IDABot
+from commandcenter import IDABot
 
 
 class NoOpAgent(IDABot):

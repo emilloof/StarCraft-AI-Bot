@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from library import Point2DI, Point2D
+from commandcenter import Point2DI, Point2D
 import math
 
 if TYPE_CHECKING:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from library import Point2D, Point2DI, BaseLocation
+from commandcenter import Point2D, Point2DI, BaseLocation
 
 from modules.extra import get_neighbours, parse_json_objects, get_closest
 

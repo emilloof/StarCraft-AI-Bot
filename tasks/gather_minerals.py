@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
 import random
-from library import BaseLocation
+from commandcenter import BaseLocation
 from tasks.task import Task, Status
 
 

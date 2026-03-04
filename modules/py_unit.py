@@ -4,10 +4,10 @@ from math import cos, sin, pi
 
 if TYPE_CHECKING:
     from tasks.task import Task
-    from library import Unit
+    from commandcenter import Unit
     from agents.basic_agent import BasicAgent
 
-from library import Point2D, PLAYER_ENEMY
+from commandcenter import Point2D, PLAYER_ENEMY
 from .extra import get_closest, get_friendly_in_radius
 from functools import cached_property, cache
 from tasks.task import Idle, Status

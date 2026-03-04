@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from modules.py_unit import PyUnit
     from agents.basic_agent import BasicAgent
 
-from library import Point2D
+from commandcenter import Point2D
 from tasks.task import Task, Status
 
 

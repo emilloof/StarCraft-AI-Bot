@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from modules.py_unit import PyUnit
 
 from tasks.task import Task, Status
-from library import UnitType, UPGRADE_ID, ABILITY_ID, Point2D, Point2DI
+from commandcenter import UnitType, UPGRADE_ID, ABILITY_ID, Point2D, Point2DI
 from modules import extra
 
 

@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from modules.py_unit import PyUnit
     from agents.basic_agent import BasicAgent
 
-from library import UNIT_TYPEID, Point2D, Point2DI
+from commandcenter import UNIT_TYPEID, Point2D, Point2DI
 from enum import Enum
 import math
 

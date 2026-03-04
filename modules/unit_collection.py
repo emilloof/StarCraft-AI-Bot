@@ -6,7 +6,7 @@ from config import TIME_KEEP_ENEMY
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
-from library import PLAYER_SELF, PLAYER_ENEMY, PLAYER_NEUTRAL, UNIT_TYPEID, Unit
+from commandcenter import PLAYER_SELF, PLAYER_ENEMY, PLAYER_NEUTRAL, UNIT_TYPEID, Unit
 from modules.py_unit import PyUnit
 from tasks.task import Task
 

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
-from library import UnitType, Point2DI, Point2D, PLAYER_SELF, UNIT_TYPEID
+from commandcenter import UnitType, Point2DI, Point2D, PLAYER_SELF, UNIT_TYPEID
 from modules.py_unit import PyUnit
 from typing import Optional
 from tasks import build

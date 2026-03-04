@@ -1,6 +1,6 @@
 import pygame
 from functools import singledispatchmethod
-from library import Point2D
+from commandcenter import Point2D
 from math import atan2, pi
 
 

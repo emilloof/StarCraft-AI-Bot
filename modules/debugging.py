@@ -12,7 +12,7 @@ from modules.path_finding.helpers import get_potential
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
-from library import PLAYER_SELF, PLAYER_NEUTRAL, PLAYER_ENEMY, Color, Point2DI
+from commandcenter import PLAYER_SELF, PLAYER_NEUTRAL, PLAYER_ENEMY, Color, Point2DI
 
 # Skapad av eriei013 för testning av depth map
 def print_depth(bottle_map: dict, heat_map_row: list, x: int, y: int) -> bool:

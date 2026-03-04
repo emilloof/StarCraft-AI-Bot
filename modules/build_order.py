@@ -1,5 +1,5 @@
 from typing import Union, Optional
-from library import UNIT_TYPEID, UPGRADE_ID
+from commandcenter import UNIT_TYPEID, UPGRADE_ID
 from modules.extra import get_id
 import re
 

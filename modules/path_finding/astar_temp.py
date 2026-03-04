@@ -1,5 +1,5 @@
 from modules.path_finding.vertex import Vertex
-from library import Point2DI
+from commandcenter import Point2DI
 from modules.py_unit import PyUnit
 from modules.path_finding.vertex import Vertex
 from modules.path_finding.custom_priority_queue import CustomPriorityQueue

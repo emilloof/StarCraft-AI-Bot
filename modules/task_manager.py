@@ -16,7 +16,7 @@ from tasks.build import Build
 from tasks.scout import Scout
 from tasks.attack import Attack
 from tasks.safe_move import SafeMove
-from library import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID
+from commandcenter import PLAYER_SELF, PLAYER_ENEMY, UNIT_TYPEID, UnitType, UPGRADE_ID
 from modules.extra import exists_producer_for, get_worker_type, has_prerequisites
 from queue import SimpleQueue
 from config import DEBUG_CONSOLE, USE_MOVE, USE_PFSCOUT

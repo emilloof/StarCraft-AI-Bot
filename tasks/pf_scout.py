@@ -14,7 +14,7 @@ from modules.py_unit import PyUnit
 if TYPE_CHECKING:
     from agents.basic_agent import BasicAgent
 
-from library import Point2D, Point2DI, Color
+from commandcenter import Point2D, Point2DI, Color
 from queue import SimpleQueue
 
 show_object_r = True
